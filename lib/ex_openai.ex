@@ -15,7 +15,7 @@ defmodule ExOpenAI do
     Supervisor.start_link(children, opts)
   end
 
-  def parse_property(%{"name" => name, "description" => desc, "type" => "array"}) do
+  defp parse_property(%{"name" => name, "description" => desc, "type" => "array"}) do
     %{
       name: name,
       description: desc,
@@ -23,7 +23,7 @@ defmodule ExOpenAI do
     }
   end
 
-  def parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
+  defp parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
     # parse oneOf array into a list of schemas
     #    "oneOf" => [
     #      %{
@@ -50,12 +50,12 @@ defmodule ExOpenAI do
     }
   end
 
-  def parse_property(
-        %{
-          "name" => name,
-          "type" => type
-        } = args
-      ) do
+  defp parse_property(
+         %{
+           "name" => name,
+           "type" => type
+         } = args
+       ) do
     %{
       type: type,
       name: name,
@@ -66,7 +66,7 @@ defmodule ExOpenAI do
     }
   end
 
-  def parse_property(args) do
+  defp parse_property(args) do
     IO.puts("Unknown property")
     IO.inspect(args)
   end
@@ -126,7 +126,7 @@ defmodule ExOpenAI do
           example: "[[1212, 318, 257, 1332, 13]]"
     user: *end_user_param_configuration
   """
-  def parse_properties(props) when is_list(props) do
+  defp parse_properties(props) when is_list(props) do
     Enum.map(props, &parse_property(&1))
   end
 
@@ -170,7 +170,7 @@ defmodule ExOpenAI do
         - input
   ```
   """
-  def parse_component_schema(%{"properties" => props, "required" => required}) do
+  defp parse_component_schema(%{"properties" => props, "required" => required}) do
     # optional params go into kw list
     # required params go into arguments
 
@@ -194,7 +194,7 @@ defmodule ExOpenAI do
     }
   end
 
-  def parse_component_schema(%{"properties" => props}),
+  defp parse_component_schema(%{"properties" => props}),
     do: parse_component_schema(%{"properties" => props, "required" => []})
 
   @doc """
@@ -205,11 +205,11 @@ defmodule ExOpenAI do
         text-davinci-001
   """
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
-  def parse_get_schema(%{"type" => type, "example" => example}) do
+  defp parse_get_schema(%{"type" => type, "example" => example}) do
     %{type: type, example: example}
   end
 
-  def parse_get_schema(%{"type" => _type} = args),
+  defp parse_get_schema(%{"type" => _type} = args),
     do: parse_get_schema(Map.put(args, "example", ""))
 
   @doc """
@@ -222,7 +222,7 @@ defmodule ExOpenAI do
             schema:
               $ref: '#/components/schemas/CreateFileRequest'
   """
-  def parse_request_body(%{"required" => required, "content" => content}, component_mapping) do
+  defp parse_request_body(%{"required" => required, "content" => content}, component_mapping) do
     {content_type, rest} =
       content
       |> Map.to_list()
@@ -250,7 +250,7 @@ defmodule ExOpenAI do
     end
   end
 
-  def parse_request_body(nil, _) do
+  defp parse_request_body(nil, _) do
     nil
   end
 
@@ -275,27 +275,27 @@ defmodule ExOpenAI do
           example: String.t(),
           required?: boolean()
         }
-  def parse_get_arguments(%{"name" => name, "schema" => schema, "in" => inarg} = args) do
+  defp parse_get_arguments(%{"name" => name, "schema" => schema, "in" => inarg} = args) do
     Map.merge(
       %{name: name, in: inarg, required?: Map.get(args, "required", false)},
       parse_get_schema(schema)
     )
   end
 
-  def parse_path(
-        path,
-        %{
-          "post" =>
-            %{
-              "operationId" => id,
-              "summary" => summary,
-              "requestBody" => body,
-              "responses" => responses,
-              "x-oaiMeta" => %{"group" => group}
-            } = args
-        },
-        component_mapping
-      ) do
+  defp parse_path(
+         path,
+         %{
+           "post" =>
+             %{
+               "operationId" => id,
+               "summary" => summary,
+               "requestBody" => body,
+               "responses" => responses,
+               "x-oaiMeta" => %{"group" => group}
+             } = args
+         },
+         component_mapping
+       ) do
     %{
       endpoint: path,
       name: Macro.underscore(id),
@@ -308,47 +308,45 @@ defmodule ExOpenAI do
     }
   end
 
-  def parse_path(
-        path,
-        %{
-          "post" =>
-            %{
-              "operationId" => id,
-              "summary" => summary,
-              "responses" => responses,
-              "x-oaiMeta" => meta
-            } = args
-        },
-        component_mapping
-      ) do
+  defp parse_path(
+         path,
+         %{
+           "post" =>
+             %{
+               "operationId" => id,
+               "summary" => summary,
+               "responses" => responses,
+               "x-oaiMeta" => meta
+             } = args
+         },
+         component_mapping
+       ) do
     parse_path(path, %{"post" => Map.put(args, "requestBody", nil)}, component_mapping)
   end
 
-  def parse_path(path, %{"post" => args}, component_mapping) do
+  defp parse_path(path, %{"post" => args}, component_mapping) do
     # IO.puts("unhandled")
     # IO.inspect(args)
     nil
   end
 
-  def parse_path(path, %{"delete" => post}, component_mapping) do
+  defp parse_path(path, %{"delete" => post}, component_mapping) do
   end
 
   @doc "parse GET functions and generate function definition"
-  def(
-    parse_path(
-      path,
-      %{
-        "get" =>
-          %{
-            "operationId" => id,
-            "summary" => summary,
-            "responses" => responses,
-            "x-oaiMeta" => %{"group" => group}
-          } = args
-      },
-      component_mapping
-    )
-  ) do
+  defp parse_path(
+         path,
+         %{
+           "get" =>
+             %{
+               "operationId" => id,
+               "summary" => summary,
+               "responses" => responses,
+               "x-oaiMeta" => %{"group" => group}
+             } = args
+         },
+         component_mapping
+       ) do
     %{
       endpoint: path,
       name: Macro.underscore(id),
