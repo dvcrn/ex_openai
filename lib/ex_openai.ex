@@ -433,7 +433,7 @@ end)
               )
 
           :get ->
-            args
+            Enum.filter(args, &Map.get(&1, :required?))
         end
 
       required_args_docstring =
