@@ -551,17 +551,17 @@ end)
               Keyword.get(all_passed_args, String.to_atom(&1.name))
             )
           )
-          # iterate over all other arguments marked with in: "query", and append them to the query
-          # for example /model/123?foo=bar
-          |> URI.parse()
-          |> URI.append_query(
-            Enum.filter(arguments, &Kernel.==(Map.get(&1, :in, ""), "query"))
-            |> Enum.reduce(%{}, fn item, acc ->
-              Map.put(acc, item.name, Keyword.get(all_passed_args, String.to_atom(item.name)))
-            end)
-            |> URI.encode_query()
-          )
-          |> URI.to_string()
+
+        # iterate over all other arguments marked with in: "query", and append them to the query
+        # for example /model/123?foo=bar
+        query =
+          Enum.filter(arguments, &Kernel.==(Map.get(&1, :in, ""), "query"))
+          |> Enum.reduce(%{}, fn item, acc ->
+            Map.put(acc, item.name, Keyword.get(all_passed_args, String.to_atom(item.name)))
+          end)
+          |> URI.encode_query()
+
+        url = url <> "?" <> query
 
         # construct body with the remaining args
 
