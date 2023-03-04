@@ -148,7 +148,7 @@ ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
  }}
 ```
 
-## How to update once OpenAI chnages something?
+## How to update once OpenAI changes something?
 
 Run `mix update_docs` and commit the new `docs.yaml` file
 
