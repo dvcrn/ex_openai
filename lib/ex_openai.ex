@@ -444,7 +444,7 @@ end)
           s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
 
           s =
-            if Map.has_key?(i, :example),
+            if Map.get(i, :example, "") != "",
               do: "#{s}\n\n*Example*: `#{Map.get(i, :example)}`",
               else: s
 
@@ -471,7 +471,7 @@ end)
           s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
 
           s =
-            if Map.has_key?(i, :example),
+            if Map.get(i, :example, "") != "",
               do: "#{s}\n\n*Example*: `#{Map.get(i, :example)}`",
               else: s
 
@@ -514,13 +514,12 @@ end)
 
       ---
 
-      Required Arguments: 
+      ### Required Arguments: 
 
       #{required_args_docstring}
 
-      ---
 
-      Optional Arguments: 
+      ### Optional Arguments: 
 
       #{optional_args_docstring}
       """
