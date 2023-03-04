@@ -1,0 +1,38 @@
+[
+  {
+    "request": {
+      "body": "{\"max_tokens\":100,\"model\":\"text-davinci-003\",\"prompt\":\"The apple is\",\"temperature\":0.28}",
+      "headers": {
+        "OpenAI-Organization": "***",
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "recv_timeout": 50000
+      },
+      "request_body": "",
+      "url": "https://api.openai.com/v1/completions?"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\"id\":\"cmpl-6qKbPImRqiq1Yd8mxtQ89sR9leGgO\",\"object\":\"text_completion\",\"created\":1677930271,\"model\":\"text-davinci-003\",\"choices\":[{\"text\":\" red\\n\\nThe apple is indeed red. Apples can come in a variety of colors, including red, green, yellow, and even pink.\",\"index\":0,\"logprobs\":null,\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":3,\"completion_tokens\":30,\"total_tokens\":33}}\n",
+      "headers": {
+        "Date": "Sat, 04 Mar 2023 11:44:32 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "378",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache, must-revalidate",
+        "Openai-Model": "text-davinci-003",
+        "Openai-Organization": "***",
+        "Openai-Processing-Ms": "1801",
+        "Openai-Version": "2020-10-01",
+        "Strict-Transport-Security": "max-age=15724800; includeSubDomains",
+        "X-Request-Id": "089e43bfb6ca66508353f588d09bfee9"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

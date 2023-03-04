@@ -1,0 +1,38 @@
+[
+  {
+    "request": {
+      "body": "{\"logit_bias\":{\"8043\":-100},\"messages\":[{\"content\":\"Hello!\",\"role\":\"user\"},{\"content\":\"What's up?\",\"role\":\"assistant\"},{\"content\":\"What ist the color of the sky?\",\"role\":\"user\"}],\"model\":\"gpt-3.5-turbo\"}",
+      "headers": {
+        "OpenAI-Organization": "***",
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "method": "post",
+      "options": {
+        "recv_timeout": 50000
+      },
+      "request_body": "",
+      "url": "https://api.openai.com/v1/chat/completions?"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\"id\":\"chatcmpl-6qL69buDX0CwYGRuCljwLqaRaCay4\",\"object\":\"chat.completion\",\"created\":1677932177,\"model\":\"gpt-3.5-turbo-0301\",\"usage\":{\"prompt_tokens\":31,\"completion_tokens\":36,\"total_tokens\":67},\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"The color of the sky is usually blue, but it can also be gray, pink, orange, red, or purple depending on the time of day and weather conditions.\"},\"finish_reason\":\"stop\",\"index\":0}]}\n",
+      "headers": {
+        "Date": "Sat, 04 Mar 2023 12:16:18 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "430",
+        "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache, must-revalidate",
+        "Openai-Model": "gpt-3.5-turbo-0301",
+        "Openai-Organization": "***",
+        "Openai-Processing-Ms": "1133",
+        "Openai-Version": "2020-10-01",
+        "Strict-Transport-Security": "max-age=15724800; includeSubDomains",
+        "X-Request-Id": "572bbb54175371ad431644f172f7a235"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]
