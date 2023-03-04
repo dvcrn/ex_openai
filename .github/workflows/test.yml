@@ -2,11 +2,11 @@ on: push
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
     strategy:
       matrix:
-        otp: ['23.3', '25.2']
+        otp: ['23.3.4.18', '25.2.3']
         elixir: ['1.11.4', '1.14.3']
     steps:
       - uses: actions/checkout@v3
