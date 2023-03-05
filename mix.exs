@@ -18,7 +18,7 @@ defmodule ExOpenAI.MixProject do
         "vcr.check": :test,
         "vcr.show": :test
       ],
-      exclude: [YamlElixir]
+      dialyzer: [plt_add_apps: [:mix]]
     ]
   end
 
@@ -59,7 +59,8 @@ defmodule ExOpenAI.MixProject do
       {:mix_test_watch, "~> 1.0"},
       {:ex_doc, ">= 0.19.2", only: :dev},
       {:exvcr, "~> 0.11", only: :test},
-      {:yaml_elixir, "~> 2.9"}
+      {:yaml_elixir, "~> 2.9"},
+      {:dialyxir, "~> 1.2", only: [:dev], runtime: false}
     ]
   end
 end

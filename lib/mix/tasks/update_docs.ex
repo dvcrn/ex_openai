@@ -1,10 +1,9 @@
 defmodule Mix.Tasks.UpdateDocs do
   @moduledoc """
-  Updates OpenAI API documentation files 
+  Updates OpenAI API documentation files
   """
 
   use Mix.Task
-  @dir System.tmp_dir()
 
   @impl Mix.Task
   def run(_) do

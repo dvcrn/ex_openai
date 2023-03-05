@@ -282,6 +282,35 @@ defmodule ExOpenAI do
     )
   end
 
+  @doc """
+  Extracts the component name from the response schema, for example:
+  %{
+  "200" => %{
+    "content" => %{
+      "application/json" => %{
+        "schema" => %{"$ref" => "#/components/schemas/ListEnginesResponse"}
+      }
+    },
+    "description" => "OK"
+  }
+  }
+
+  """
+  defp extract_response_type(%{"200" => %{"content" => content}}) do
+    case content
+         # [["application/json", %{}]]
+         |> Map.to_list()
+         # ["application/json", %{}]
+         |> List.first()
+         # %{}
+         |> Kernel.elem(1)
+         |> Map.get("schema") do
+      # no ref
+      %{"type" => type} -> String.to_atom(type)
+      %{"$ref" => ref} -> {:object, String.replace(ref, "#/components/schemas/", "")}
+    end
+  end
+
   defp parse_path(
          path,
          %{
@@ -304,7 +333,8 @@ defmodule ExOpenAI do
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
       method: :post,
       request_body: parse_request_body(body, component_mapping),
-      group: group
+      group: group,
+      response_type: extract_response_type(responses)
     }
   end
 
@@ -354,7 +384,8 @@ defmodule ExOpenAI do
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
       method: :get,
-      group: group
+      group: group,
+      response_type: extract_response_type(responses)
     }
   end
 
@@ -369,11 +400,15 @@ defmodule ExOpenAI do
         Map.put(acc, Macro.underscore(name), parse_component_schema(value))
       end)
 
-    yml["paths"]
-    |> Enum.map(fn {path, field_data} -> parse_path(path, field_data, component_mapping) end)
-    |> Enum.filter(&(!is_nil(&1)))
-    # TODO: implement form-data
-    |> Enum.filter(&Kernel.!=(Map.get(&1, :request_body, nil), :unsupported_content_type))
+    %{
+      components: component_mapping,
+      functions:
+        yml["paths"]
+        |> Enum.map(fn {path, field_data} -> parse_path(path, field_data, component_mapping) end)
+        |> Enum.filter(&(!is_nil(&1)))
+        # TODO: implement form-data
+        |> Enum.filter(&Kernel.!=(Map.get(&1, :request_body, nil), :unsupported_content_type))
+    }
   end
 
   def type_to_spec("number"), do: quote(do: float())
@@ -385,18 +420,61 @@ defmodule ExOpenAI do
   def type_to_spec("object"), do: quote(do: map())
   def type_to_spec("oneOf"), do: quote(do: any())
 
+  def type_to_spec({:object, component}),
+    do: quote(do: unquote(Module.concat(ExOpenAI.Components, component)).t())
+
+  # fallbacks
+  def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
+
   def type_to_spec(x) do
     IO.puts("unhandled: #{x}")
     quote(do: any())
   end
-
-  def generate_get_function() do
-  end
 end
 
-# Generate modules
+docs = ExOpenAI.get_documentation()
 
-ExOpenAI.get_documentation()
+# Generate structs from schema
+docs
+|> Map.get(:components)
+|> Enum.each(fn {name, component} ->
+  name =
+    name
+    |> Macro.camelize()
+    |> String.to_atom()
+    |> (&Module.concat(ExOpenAI.Components, &1)).()
+
+  struct_fields =
+    [component.required_props, component.optional_props]
+    |> Enum.map(fn i ->
+      Enum.reduce(
+        i,
+        %{},
+        &Map.merge(&2, %{
+          (Map.get(&1, :name) |> String.to_atom()) =>
+            quote(do: unquote(ExOpenAI.type_to_spec(Map.get(&1, :type))))
+        })
+      )
+    end)
+
+  defmodule name do
+    @type t :: %unquote(name){
+            unquote_splicing(struct_fields |> Enum.map(&Map.to_list(&1)) |> List.flatten())
+          }
+
+    with l <- List.first(struct_fields),
+         is_empty? <- Enum.empty?(l),
+         false <- is_empty? do
+      @enforce_keys Map.keys(l)
+    end
+
+    defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
+  end
+end)
+
+# generate modules
+docs
+|> Map.get(:functions)
 |> Enum.reduce(%{}, fn fx, acc ->
   Map.put(acc, fx.group, [fx | Map.get(acc, fx.group, [])])
 end)
@@ -418,7 +496,8 @@ end)
         arguments: args,
         endpoint: endpoint,
         deprecated?: deprecated,
-        method: method
+        method: method,
+        response_type: response_type
       } = fx
 
       name = String.to_atom(name)
@@ -488,20 +567,22 @@ end)
         |> Enum.map(fn item -> quote do: unquote(ExOpenAI.type_to_spec(item.type)) end)
 
       # convert optional args into keyword list
+      response_spec = ExOpenAI.type_to_spec(response_type)
+
       optional_args =
         merged_optional_args
-        |> Enum.reduce(nil, fn item, acc ->
+        |> Enum.reduce([], fn item, acc ->
           name = item.name
           type = item.type
 
           case acc do
-            nil ->
+            [] ->
               quote do: {unquote(String.to_atom(name)), unquote(ExOpenAI.type_to_spec(type))}
 
             val ->
               quote do:
-                      unquote(val)
-                      | {unquote(String.to_atom(name)), unquote(ExOpenAI.type_to_spec(type))}
+                      {unquote(String.to_atom(name)), unquote(ExOpenAI.type_to_spec(type))}
+                      | unquote(val)
           end
         end)
 
@@ -512,19 +593,24 @@ end)
 
       ---
 
-      ### Required Arguments: 
+      ### Required Arguments:
 
       #{required_args_docstring}
 
 
-      ### Optional Arguments: 
+      ### Optional Arguments:
 
       #{optional_args_docstring}
       """
       if deprecated, do: @deprecated("Deprecated by OpenAI")
 
+      opts_name =
+        name |> Atom.to_string() |> Kernel.<>("_opts") |> String.to_atom() |> Macro.var(nil)
+
+      @type unquote(opts_name) :: unquote(optional_args)
+      @spec unquote(name)(unquote_splicing(spec)) :: {:ok, any()} | {:error, any()}
       @spec unquote(name)(unquote_splicing(spec), unquote([optional_args])) ::
-              {:ok, any()} | {:error, any()}
+              {:ok, unquote(response_spec)} | {:error, any()}
       def unquote(name)(unquote_splicing(arg_names), opts \\ []) do
         # store binding so we can't access args of the function later
         binding = binding()
@@ -580,17 +666,8 @@ end)
             ])
           )
 
-        # construct body
-        case method do
-          :post ->
-            ExOpenAI.Client.api_post(url, body_params, opts)
-
-          :get ->
-            ExOpenAI.Client.api_get(url, opts)
-        end
+        ExOpenAI.Client.api_call(method, url, body_params, opts)
       end
-
-      # Module.create(Hoge1, c, Macro.Env.location(__ENV__))
     end)
   end
 end)

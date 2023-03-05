@@ -12,7 +12,7 @@ defmodule ExOpenAI.Client do
       {:ok, %HTTPoison.Response{status_code: 200, body: {:ok, body}}} ->
         res =
           body
-          |> Enum.map(fn {k, v} -> {String.to_atom(k), v} end)
+          |> Enum.map(fn {k, v} -> {String.to_existing_atom(k), v} end)
           |> Map.new()
 
         {:ok, res}
@@ -66,6 +66,9 @@ defmodule ExOpenAI.Client do
     |> post(body, request_headers(), request_options)
     |> handle_response()
   end
+
+  def api_call(:get, url, _params, request_options), do: api_get(url, request_options)
+  def api_call(:post, url, params, request_options), do: api_post(url, params, request_options)
 
   def multipart_api_post(url, file_path, file_param, params, request_options \\ []) do
     body_params = params |> Enum.map(fn {k, v} -> {Atom.to_string(k), v} end)
