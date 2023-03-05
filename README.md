@@ -149,6 +149,25 @@ ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
  }}
 ```
 
+### Using ChatGPT APIs
+
+No @spec for "object" and "array" types available yet, so just follow the OpenAPI documentation:
+
+```elixir
+msgs = [
+  %{role: "user", content: "Hello!"},
+  %{role: "assistant", content: "What's up?"},
+  %{role: "user", content: "What ist the color of the sky?"}
+]
+
+{:ok, res} =
+  ExOpenAI.Chat.create_chat_completion(msgs, "gpt-3.5-turbo",
+    logit_bias: %{
+      "8043" => -100
+    }
+  )
+```
+
 ## How to update once OpenAI changes something?
 
 Run `mix update_docs` and commit the new `docs.yaml` file
