@@ -20,10 +20,10 @@ defmodule ExOpenAI.CompletionTest do
       assert Enum.count(res.choices) == 1
 
       assert List.first(res.choices) == %{
-               "finish_reason" => "stop",
-               "index" => 0,
-               "logprobs" => nil,
-               "text" =>
+               finish_reason: "stop",
+               index: 0,
+               logprobs: nil,
+               text:
                  " red\n\nThe apple is indeed red. Apples can come in a variety of colors, including red, green, yellow, and even pink."
              }
     end
