@@ -12,6 +12,15 @@ defmodule ExOpenAI do
     children = [Config]
     opts = [strategy: :one_for_one, name: ExOpenAI.Supervisor]
 
+    # force allocate all possible keys / atoms that are within all available components
+    # this allows us to use String.to_existing_atom without having to worry that those
+    # atoms aren't allocated yet
+    with {:ok, mods} <- :application.get_key(:ex_openai, :modules) do
+      mods
+      |> Enum.filter(&(&1 |> Module.split() |> Enum.at(1) == "Components"))
+      |> Enum.map(& &1.get_ast)
+    end
+
     Supervisor.start_link(children, opts)
   end
 
@@ -554,6 +563,7 @@ docs
       )
     end)
 
+  # module start
   defmodule name do
     @type t :: %unquote(name){
             unquote_splicing(
@@ -566,11 +576,22 @@ docs
     with l <- List.first(struct_fields),
          is_empty? <- Enum.empty?(l),
          false <- is_empty? do
-      @enforce_keys Map.keys(l)
+      # @enforce_keys Map.keys(l)
     end
 
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
+
+    @doc """
+    Helper function to return the full AST representation of the type
+    This is used so that all atoms in the map are getting allocated recursively.
+    Without this, we wouldn't be able to safely do String.to_existing_atom()
+    """
+    def get_ast() do
+      unquote(struct_fields |> Macro.escape())
+    end
   end
+
+  # module end
 end)
 
 # generate modules
@@ -771,6 +792,9 @@ end)
           {:ok, res} ->
             case unquote(response_type) do
               {:component, comp} ->
+                # todo: this is not recursive yet, so nested values won't be correctly identified as struct
+                # although the typespec is already recursive, so there can be cases where
+                # the typespec says a struct is nested, but there isn't
                 {:ok, struct(ExOpenAI.string_to_component(comp), ExOpenAI.keys_to_atoms(res))}
 
               _ ->
