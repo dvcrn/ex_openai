@@ -15,12 +15,67 @@ defmodule ExOpenAI do
     Supervisor.start_link(children, opts)
   end
 
-  defp parse_property(%{"name" => name, "description" => desc, "type" => "array"}) do
-    %{
-      name: name,
-      description: desc,
-      type: "array"
-    }
+  defp parse_type(
+         %{
+           "type" => "object",
+           "properties" => properties
+         } = args
+       ) do
+    parsed_obj =
+      properties
+      |> Enum.map(fn {name, obj} ->
+        case obj do
+          %{"type" => type} ->
+            {name, type}
+
+          %{"$ref" => ref} ->
+            {name, {:component, String.replace(ref, "#/components/schemas/", "")}}
+        end
+      end)
+      |> Enum.into(%{})
+
+    parsed_obj
+  end
+
+  defp parse_type(
+         %{
+           "type" => "array",
+           "items" => items
+         } = args
+       ) do
+    type =
+      case items do
+        # on nested array, recurse deeper
+        %{"type" => "array", "items" => nested} ->
+          {:array, parse_type(nested)}
+
+        %{"type" => "object"} ->
+          {:object, parse_type(items)}
+
+        %{"type" => type} ->
+          parse_type(items)
+
+        %{"$ref" => ref} ->
+          {:component, String.replace(ref, "#/components/schemas/", "")}
+
+        %{} ->
+          :object
+
+        x ->
+          IO.puts("invalid type:")
+          IO.inspect(x)
+      end
+  end
+
+  defp parse_type(%{"type" => type}), do: type
+
+  defp parse_property(
+         %{
+           "type" => "array",
+           "items" => items
+         } = args
+       ) do
+    parse_property(Map.put(args, "type", {:array, parse_type(args)}))
   end
 
   defp parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
@@ -52,8 +107,17 @@ defmodule ExOpenAI do
 
   defp parse_property(
          %{
-           "name" => name,
-           "type" => type
+           "type" => "object",
+           "properties" => properties
+         } = args
+       ) do
+    parse_property(Map.put(args, "type", {:object, parse_type(args)}))
+  end
+
+  defp parse_property(
+         %{
+           "type" => type,
+           "name" => name
          } = args
        ) do
     %{
@@ -171,9 +235,6 @@ defmodule ExOpenAI do
   ```
   """
   defp parse_component_schema(%{"properties" => props, "required" => required}) do
-    # optional params go into kw list
-    # required params go into arguments
-
     # turn required stuf into hashmap for quicker access and merge into actual properties
     required_map = required |> Enum.reduce(%{}, fn item, acc -> Map.put(acc, item, true) end)
 
@@ -307,7 +368,7 @@ defmodule ExOpenAI do
          |> Map.get("schema") do
       # no ref
       %{"type" => type} -> String.to_atom(type)
-      %{"$ref" => ref} -> {:object, String.replace(ref, "#/components/schemas/", "")}
+      %{"$ref" => ref} -> {:component, String.replace(ref, "#/components/schemas/", "")}
     end
   end
 
@@ -420,16 +481,50 @@ defmodule ExOpenAI do
   def type_to_spec("object"), do: quote(do: map())
   def type_to_spec("oneOf"), do: quote(do: any())
 
-  def type_to_spec({:object, component}),
-    do: quote(do: unquote(Module.concat(ExOpenAI.Components, component)).t())
+  def type_to_spec({:array, {:object, nested_object}}) do
+    parsed = type_to_spec({:object, nested_object})
+    [parsed]
+  end
+
+  def type_to_spec({:array, nested}) do
+    quote(do: unquote([type_to_spec(nested)]))
+  end
+
+  def type_to_spec({:object, nested}) when is_map(nested) do
+    parsed =
+      nested
+      |> Enum.map(fn {name, type} ->
+        {String.to_atom(name), type_to_spec(type)}
+      end)
+
+    # manually construct correct AST for maps
+    {:%{}, [], parsed}
+  end
+
+  # nested component reference
+  def type_to_spec({:component, component}) when is_binary(component),
+    do: quote(do: unquote(string_to_component(component)).t())
 
   # fallbacks
   def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
 
   def type_to_spec(x) do
-    IO.puts("unhandled: #{x}")
+    IO.puts("unhandled: #{inspect(x)}")
     quote(do: any())
   end
+
+  def string_to_component(comp), do: Module.concat(ExOpenAI.Components, comp)
+
+  def keys_to_atoms(string_key_map) when is_map(string_key_map) do
+    IO.inspect(string_key_map)
+
+    for {key, val} <- string_key_map,
+        into: %{},
+        do: {String.to_existing_atom(key), keys_to_atoms(val)}
+  end
+
+  def keys_to_atoms(value) when is_list(value), do: Enum.map(value, &keys_to_atoms/1)
+  def keys_to_atoms(value), do: value
 end
 
 docs = ExOpenAI.get_documentation()
@@ -450,16 +545,24 @@ docs
       Enum.reduce(
         i,
         %{},
-        &Map.merge(&2, %{
-          (Map.get(&1, :name) |> String.to_atom()) =>
-            quote(do: unquote(ExOpenAI.type_to_spec(Map.get(&1, :type))))
-        })
+        fn item, acc ->
+          name = item.name
+          type = item.type
+
+          Map.merge(acc, %{
+            String.to_atom(name) => quote(do: unquote(ExOpenAI.type_to_spec(type)))
+          })
+        end
       )
     end)
 
   defmodule name do
     @type t :: %unquote(name){
-            unquote_splicing(struct_fields |> Enum.map(&Map.to_list(&1)) |> List.flatten())
+            unquote_splicing(
+              struct_fields
+              |> Enum.map(&Map.to_list(&1))
+              |> Enum.reduce(&Kernel.++/2)
+            )
           }
 
     with l <- List.first(struct_fields),
@@ -549,7 +652,7 @@ end)
 
           s =
             if Map.get(i, :example, "") != "",
-              do: "#{s}\n\n*Example*: `#{Map.get(i, :example)}`",
+              do: "#{s}\n\n*Example*: `#{inspect(Map.get(i, :example))}`",
               else: s
 
           s
