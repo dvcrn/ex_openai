@@ -10,12 +10,7 @@ defmodule ExOpenAI.Client do
   def handle_response(httpoison_response) do
     case httpoison_response do
       {:ok, %HTTPoison.Response{status_code: 200, body: {:ok, body}}} ->
-        res =
-          body
-          |> Enum.map(fn {k, v} -> {String.to_existing_atom(k), v} end)
-          |> Map.new()
-
-        {:ok, res}
+        {:ok, body}
 
       {:ok, %HTTPoison.Response{body: {:ok, body}}} ->
         {:error, body}

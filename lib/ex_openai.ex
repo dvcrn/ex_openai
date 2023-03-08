@@ -516,8 +516,6 @@ defmodule ExOpenAI do
   def string_to_component(comp), do: Module.concat(ExOpenAI.Components, comp)
 
   def keys_to_atoms(string_key_map) when is_map(string_key_map) do
-    IO.inspect(string_key_map)
-
     for {key, val} <- string_key_map,
         into: %{},
         do: {String.to_existing_atom(key), keys_to_atoms(val)}
@@ -769,7 +767,19 @@ end)
             ])
           )
 
-        ExOpenAI.Client.api_call(method, url, body_params, opts)
+        case ExOpenAI.Client.api_call(method, url, body_params, opts) do
+          {:ok, res} ->
+            case unquote(response_type) do
+              {:component, comp} ->
+                {:ok, struct(ExOpenAI.string_to_component(comp), ExOpenAI.keys_to_atoms(res))}
+
+              _ ->
+                {:ok, res}
+            end
+
+          e ->
+            e
+        end
       end
     end)
   end
