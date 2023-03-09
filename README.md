@@ -9,7 +9,7 @@ This SDK is auto-generated using [metaprogramming](https://elixirschool.com/en/l
 
 **Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you find anything acting up.
 
-## Features 
+## Features
 
 - Up-to-date thanks to metaprogramming
 - Auto-generated function documentation
@@ -26,7 +26,7 @@ def deps do
 end
 ```
 
-## What's working 
+## What's working
 
 - Basically everything that uses `application/json` is working, and everything that requires upload of a stream/file is not. To avoid confusion, everything that expects `multipart/form-data` has been excluded for now.
 - Full typespecs for return types and nested types
@@ -88,7 +88,7 @@ config :ex_openai,
 
 ```
 
-## Usage 
+## Usage
 
 ```elixir
 ExOpenAI.Models.list_models
@@ -96,28 +96,28 @@ ExOpenAI.Models.list_models
  %{
    data: [
      %{
-       "created" => 1649358449,
-       "id" => "babbage",
-       "object" => "model",
-       "owned_by" => "openai",
-       "parent" => nil,
-       "permission" => [
+       "created": 1649358449,
+       "id": "babbage",
+       "object": "model",
+       "owned_by": "openai",
+       "parent": nil,
+       "permission": [
          %{
-           "allow_create_engine" => false,
-           "allow_fine_tuning" => false,
-           "allow_logprobs" => true,
-           "allow_sampling" => true,
-           "allow_search_indices" => false,
-           "allow_view" => true,
-           "created" => 1669085501,
-           "group" => nil,
-           "id" => "modelperm-49FUp5v084tBB49tC4z8LPH5",
-           "is_blocking" => false,
-           "object" => "model_permission",
-           "organization" => "*"
+           "allow_create_engine": false,
+           "allow_fine_tuning": false,
+           "allow_logprobs": true,
+           "allow_sampling": true,
+           "allow_search_indices": false,
+           "allow_view": true,
+           "created": 1669085501,
+           "group": nil,
+           "id": "modelperm-49FUp5v084tBB49tC4z8LPH5",
+           "is_blocking": false,
+           "object": "model_permission",
+           "organization": "*"
          }
        ],
-       "root" => "babbage"
+       "root": "babbage"
      },
 	...
 ```
@@ -130,10 +130,10 @@ ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
  %{
    choices: [
      %{
-       "finish_reason" => "length",
-       "index" => 0,
-       "logprobs" => nil,
-       "text" => " blue\n\nThe sky is a light blue hue that may have a few white"
+       "finish_reason": "length",
+       "index": 0,
+       "logprobs": nil,
+       "text": " blue\n\nThe sky is a light blue hue that may have a few white"
      }
    ],
    created: 1677929239,
@@ -141,9 +141,9 @@ ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
    model: "text-davinci-003",
    object: "text_completion",
    usage: %{
-     "completion_tokens" => 16,
-     "prompt_tokens" => 3,
-     "total_tokens" => 19
+     "completion_tokens": 16,
+     "prompt_tokens": 3,
+     "total_tokens": 19
    }
  }}
 ```
