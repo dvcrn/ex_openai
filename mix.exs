@@ -4,7 +4,7 @@ defmodule ExOpenAI.MixProject do
   def project do
     [
       app: :ex_openai,
-      version: "0.1.1",
+      version: "0.2.0",
       elixir: "~> 1.11",
       description: description(),
       start_permanent: Mix.env() == :prod,
@@ -60,7 +60,8 @@ defmodule ExOpenAI.MixProject do
       {:ex_doc, ">= 0.19.2", only: :dev},
       {:exvcr, "~> 0.11", only: :test},
       {:yaml_elixir, "~> 2.9"},
-      {:dialyxir, "~> 1.2", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 end
