@@ -33,12 +33,10 @@ defmodule ExOpenAI do
   """
   def module_overwrites, do: [ExOpenAI.Components.Model]
 
-  defp parse_type(
-         %{
-           "type" => "object",
-           "properties" => properties
-         } = args
-       ) do
+  defp parse_type(%{
+         "type" => "object",
+         "properties" => properties
+       }) do
     parsed_obj =
       properties
       |> Enum.map(fn {name, obj} ->
@@ -55,34 +53,30 @@ defmodule ExOpenAI do
     parsed_obj
   end
 
-  defp parse_type(
-         %{
-           "type" => "array",
-           "items" => items
-         } = args
-       ) do
-    type =
-      case items do
-        # on nested array, recurse deeper
-        %{"type" => "array", "items" => nested} ->
-          {:array, parse_type(nested)}
+  defp parse_type(%{
+         "type" => "array",
+         "items" => items
+       }) do
+    case items do
+      # on nested array, recurse deeper
+      %{"type" => "array", "items" => nested} ->
+        {:array, parse_type(nested)}
 
-        %{"type" => "object"} ->
-          {:object, parse_type(items)}
+      %{"type" => "object"} ->
+        {:object, parse_type(items)}
 
-        %{"type" => type} ->
-          parse_type(items)
+      %{"type" => _type} ->
+        parse_type(items)
 
-        %{"$ref" => ref} ->
-          {:component, String.replace(ref, "#/components/schemas/", "")}
+      %{"$ref" => ref} ->
+        {:component, String.replace(ref, "#/components/schemas/", "")}
 
-        %{} ->
-          :object
+      %{} ->
+        :object
 
-        x ->
-          IO.puts("invalid type:")
-          IO.inspect(x)
-      end
+      x ->
+        IO.puts("invalid type: #{inspect(x)}")
+    end
   end
 
   defp parse_type(%{"type" => type}), do: type
@@ -90,7 +84,7 @@ defmodule ExOpenAI do
   defp parse_property(
          %{
            "type" => "array",
-           "items" => items
+           "items" => _items
          } = args
        ) do
     parse_property(Map.put(args, "type", {:array, parse_type(args)}))
@@ -126,7 +120,7 @@ defmodule ExOpenAI do
   defp parse_property(
          %{
            "type" => "object",
-           "properties" => properties
+           "properties" => _properties
          } = args
        ) do
     parse_property(Map.put(args, "type", {:object, parse_type(args)}))
@@ -149,109 +143,13 @@ defmodule ExOpenAI do
   end
 
   defp parse_property(args) do
-    IO.puts("Unknown property")
-    IO.inspect(args)
+    IO.puts("Unknown property: #{inspect(args)}")
   end
 
-  @doc """
-  Pattern 1:
-  properties:
-    object:
-      type: string
-    model:
-      type: string
-    data:
-      type: array
-      items:
-        type: object
-        properties:
-          index:
-            type: integer
-          object:
-            type: string
-          embedding:
-            type: array
-            items:
-              type: number
-        required:
-          - index
-          - object
-          - embedding
-
-  Pattern 2:
-  properties:
-    model: *model_configuration
-    input:
-      description: Desc
-      example: The quick brown fox jumped over the lazy dog
-      oneOf:
-        - type: string
-          default: ''
-          example: "This is a test."
-        - type: array
-          items:
-            type: string
-            default: ''
-            example: "This is a test."
-        - type: array
-          minItems: 1
-          items:
-            type: integer
-          example: [1212, 318, 257, 1332, 13]
-        - type: array
-          minItems: 1
-          items:
-            type: array
-            minItems: 1
-            items:
-              type: integer
-          example: "[[1212, 318, 257, 1332, 13]]"
-    user: *end_user_param_configuration
-  """
   defp parse_properties(props) when is_list(props) do
     Enum.map(props, &parse_property(&1))
   end
 
-  @doc """
-
-  In yaml:
-  ```
-  CreateEmbeddingRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        model: *model_configuration
-        input:
-          description: Desc
-          example: The quick brown fox jumped over the lazy dog
-          oneOf:
-            - type: string
-              default: ''
-              example: "This is a test."
-            - type: array
-              items:
-                type: string
-                default: ''
-                example: "This is a test."
-            - type: array
-              minItems: 1
-              items:
-                type: integer
-              example: "[1212, 318, 257, 1332, 13]"
-            - type: array
-              minItems: 1
-              items:
-                type: array
-                minItems: 1
-                items:
-                  type: integer
-              example: "[[1212, 318, 257, 1332, 13]]"
-        user: *end_user_param_configuration
-      required:
-        - model
-        - input
-  ```
-  """
   defp parse_component_schema(%{"properties" => props, "required" => required}) do
     # turn required stuf into hashmap for quicker access and merge into actual properties
     required_map = required |> Enum.reduce(%{}, fn item, acc -> Map.put(acc, item, true) end)
@@ -276,13 +174,6 @@ defmodule ExOpenAI do
   defp parse_component_schema(%{"properties" => props}),
     do: parse_component_schema(%{"properties" => props, "required" => []})
 
-  @doc """
-  Converts a GET field schema definition into a %{type: "string", example: "string"}-like map
-  In yaml:
-      type: string
-      example:
-        text-davinci-001
-  """
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
   defp parse_get_schema(%{"type" => type, "example" => example}) do
     %{type: type, example: example}
@@ -291,16 +182,6 @@ defmodule ExOpenAI do
   defp parse_get_schema(%{"type" => _type} = args),
     do: parse_get_schema(Map.put(args, "example", ""))
 
-  @doc """
-  Parses the given body construct into a map
-  In yaml:
-  requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CreateFileRequest'
-  """
   defp parse_request_body(%{"required" => required, "content" => content}, component_mapping) do
     {content_type, rest} =
       content
@@ -332,20 +213,6 @@ defmodule ExOpenAI do
     nil
   end
 
-  @doc """
-  Parses a list of properties into usable function arguments
-  Properties is a list of [%{"name" => "xxx", "in" => "xxx"}}], or im yaml
-  parameters:
-  - in: path
-    name: model
-    required: true
-    schema:
-      type: string
-      example:
-        text-davinci-001
-    description:
-      The ID of the model to use for this request
-  """
   @spec parse_get_arguments(any()) :: %{
           name: String.t(),
           in: String.t(),
@@ -360,20 +227,6 @@ defmodule ExOpenAI do
     )
   end
 
-  @doc """
-  Extracts the component name from the response schema, for example:
-  %{
-  "200" => %{
-    "content" => %{
-      "application/json" => %{
-        "schema" => %{"$ref" => "#/components/schemas/ListEnginesResponse"}
-      }
-    },
-    "description" => "OK"
-  }
-  }
-
-  """
   defp extract_response_type(%{"200" => %{"content" => content}}) do
     case content
          # [["application/json", %{}]]
@@ -421,10 +274,10 @@ defmodule ExOpenAI do
          %{
            "post" =>
              %{
-               "operationId" => id,
-               "summary" => summary,
-               "responses" => responses,
-               "x-oaiMeta" => meta
+               "operationId" => _id,
+               "summary" => _summary,
+               "responses" => _responses,
+               "x-oaiMeta" => _meta
              } = args
          },
          component_mapping
@@ -432,16 +285,17 @@ defmodule ExOpenAI do
     parse_path(path, %{"post" => Map.put(args, "requestBody", nil)}, component_mapping)
   end
 
-  defp parse_path(path, %{"post" => args}, component_mapping) do
-    # IO.puts("unhandled")
-    # IO.inspect(args)
+  defp parse_path(_path, %{"post" => _args}, _component_mapping) do
+    # IO.puts("unhandled POST: #{inspect(path)} - #{inspect(args)}")
     nil
   end
 
-  defp parse_path(path, %{"delete" => post}, component_mapping) do
+  defp parse_path(_path, %{"delete" => _post}, _component_mapping) do
+    # IO.puts("unhandled DELETE: #{inspect(path)} - #{inspect(post)}")
+    nil
   end
 
-  @doc "parse GET functions and generate function definition"
+  # "parse GET functions and generate function definition"
   defp parse_path(
          path,
          %{
@@ -453,7 +307,7 @@ defmodule ExOpenAI do
                "x-oaiMeta" => %{"group" => group}
              } = args
          },
-         component_mapping
+         _component_mapping
        ) do
     %{
       endpoint: path,
@@ -701,7 +555,7 @@ end)
         end
 
       required_args_docstring =
-        Enum.map(merged_required_args, fn i ->
+        Enum.map_join(merged_required_args, "\n\n", fn i ->
           s = "- `#{i.name}`"
           s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
 
@@ -712,7 +566,6 @@ end)
 
           s
         end)
-        |> Enum.join("\n\n")
 
       merged_optional_args =
         case method do
@@ -728,7 +581,7 @@ end)
         end
 
       optional_args_docstring =
-        Enum.map(merged_optional_args, fn i ->
+        Enum.map_join(merged_optional_args, "\n\n", fn i ->
           s = "- `#{i.name}`"
           s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
 
@@ -739,7 +592,6 @@ end)
 
           s
         end)
-        |> Enum.join("\n\n")
 
       # convert non-optional args into [arg1, arg2, arg3] representation
       arg_names =
