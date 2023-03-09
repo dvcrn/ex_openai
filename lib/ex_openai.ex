@@ -12,17 +12,26 @@ defmodule ExOpenAI do
     children = [Config]
     opts = [strategy: :one_for_one, name: ExOpenAI.Supervisor]
 
+    # TODO: find something more elegant for doing this
     # force allocate all possible keys / atoms that are within all available components
     # this allows us to use String.to_existing_atom without having to worry that those
     # atoms aren't allocated yet
-    with {:ok, mods} <- :application.get_key(:ex_openai, :modules) do
-      mods
-      |> Enum.filter(&(&1 |> Module.split() |> Enum.at(1) == "Components"))
-      |> Enum.map(& &1.get_ast)
-    end
+    # with {:ok, mods} <- :application.get_key(:ex_openai, :modules) do
+    #   mods
+    #   |> Enum.filter(&(&1 |> Module.split() |> Enum.at(1) == "Components"))
+    #   |> IO.inspect()
+
+    #   # |> Enum.map(& &1.unpack_ast)
+    # end
 
     Supervisor.start_link(children, opts)
   end
+
+  @doc """
+  Modules provided by this package that are not in the openapi docs provided by OpenAI
+  So instead of generating those, we just provide a fallback
+  """
+  def module_overwrites, do: [ExOpenAI.Components.Model]
 
   defp parse_type(
          %{
@@ -302,7 +311,6 @@ defmodule ExOpenAI do
     ref =
       rest["schema"]["$ref"]
       |> String.replace_prefix("#/components/schemas/", "")
-      |> Macro.underscore()
 
     case content_type do
       "application/json" ->
@@ -467,7 +475,7 @@ defmodule ExOpenAI do
     component_mapping =
       yml["components"]["schemas"]
       |> Enum.reduce(%{}, fn {name, value}, acc ->
-        Map.put(acc, Macro.underscore(name), parse_component_schema(value))
+        Map.put(acc, name, parse_component_schema(value))
       end)
 
     %{
@@ -527,7 +535,19 @@ defmodule ExOpenAI do
   def keys_to_atoms(string_key_map) when is_map(string_key_map) do
     for {key, val} <- string_key_map,
         into: %{},
-        do: {String.to_existing_atom(key), keys_to_atoms(val)}
+        do: {
+          try do
+            String.to_existing_atom(key)
+          rescue
+            ArgumentError ->
+              IO.puts(
+                "Warning! Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
+              )
+
+              String.to_atom(key)
+          end,
+          keys_to_atoms(val)
+        }
   end
 
   def keys_to_atoms(value) when is_list(value), do: Enum.map(value, &keys_to_atoms/1)
@@ -539,13 +559,14 @@ docs = ExOpenAI.get_documentation()
 # Generate structs from schema
 docs
 |> Map.get(:components)
+# generate module name: ExOpenAI.Components.X
+|> Enum.map(fn {name, c} ->
+  {name
+   |> ExOpenAI.string_to_component(), c}
+end)
+# ignore stuff that's overwritten
+|> Enum.filter(fn {name, _c} -> name not in ExOpenAI.module_overwrites() end)
 |> Enum.each(fn {name, component} ->
-  name =
-    name
-    |> Macro.camelize()
-    |> String.to_atom()
-    |> (&Module.concat(ExOpenAI.Components, &1)).()
-
   struct_fields =
     [component.required_props, component.optional_props]
     |> Enum.map(fn i ->
@@ -582,12 +603,55 @@ docs
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
     @doc """
-    Helper function to return the full AST representation of the type
+    Helper function to return the full AST representation of the type and all it's nested types
     This is used so that all atoms in the map are getting allocated recursively.
     Without this, we wouldn't be able to safely do String.to_existing_atom()
     """
-    def get_ast() do
-      unquote(struct_fields |> Macro.escape())
+    def unpack_ast(partial_tree \\ %{}) do
+      resolved_mods = Map.get(partial_tree, :resolved_mods, [])
+      partial_tree = Map.put(partial_tree, :resolved_mods, resolved_mods)
+
+      {:ok, x} = Code.Typespec.fetch_types(__MODULE__)
+
+      case Enum.member?(resolved_mods, __MODULE__) do
+        true ->
+          # IO.puts("already resolved, skipping")
+          partial_tree
+
+        false ->
+          res =
+            x
+            |> List.first()
+            |> Kernel.elem(1)
+            |> Code.Typespec.type_to_quoted()
+            # walk through the AST and find all "ExOpenAI.Components"
+            # unpack their AST recursively and merge it all together into
+            # the accumulator
+            |> Macro.prewalk(partial_tree, fn args, acc ->
+              r =
+                with true <- is_atom(args),
+                     ats <- Atom.to_string(args),
+                     true <- String.contains?(ats, "ExOpenAI.Components") do
+                  tree =
+                    args.unpack_ast(%{
+                      resolved_mods: acc.resolved_mods ++ [__MODULE__]
+                    })
+
+                  {:ok, tree}
+                end
+
+              # merge back into accumulator, otherwise just return AST as is
+              case r do
+                {:ok, res} -> {args, Map.merge(acc, res)}
+                _ -> {args, acc}
+              end
+            end)
+
+          {ast, acc} = res
+
+          acc
+          |> Map.put(__MODULE__, ast)
+      end
     end
   end
 
@@ -601,7 +665,6 @@ docs
   Map.put(acc, fx.group, [fx | Map.get(acc, fx.group, [])])
 end)
 |> Enum.each(fn {modname, functions} ->
-  # some-name -> ExOpenAI.SomeName
   modname =
     modname
     |> String.replace("-", "_")
@@ -731,7 +794,7 @@ end)
 
       @type unquote(opts_name) :: unquote(optional_args)
       @spec unquote(name)(unquote_splicing(spec)) :: {:ok, any()} | {:error, any()}
-      @spec unquote(name)(unquote_splicing(spec), unquote([optional_args])) ::
+      @spec unquote(name)(unquote_splicing(spec), [unquote(optional_args)]) ::
               {:ok, unquote(response_spec)} | {:error, any()}
       def unquote(name)(unquote_splicing(arg_names), opts \\ []) do
         # store binding so we can't access args of the function later
@@ -792,6 +855,10 @@ end)
           {:ok, res} ->
             case unquote(response_type) do
               {:component, comp} ->
+                # calling unpack_ast here so that all atoms of the given struct are
+                # getting allocated. otherwise later usage of keys_to_atom will fail
+                ExOpenAI.string_to_component(comp).unpack_ast()
+
                 # todo: this is not recursive yet, so nested values won't be correctly identified as struct
                 # although the typespec is already recursive, so there can be cases where
                 # the typespec says a struct is nested, but there isn't

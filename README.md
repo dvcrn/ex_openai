@@ -29,7 +29,7 @@ end
 ## What's working 
 
 - Basically everything that uses `application/json` is working, and everything that requires upload of a stream/file is not. To avoid confusion, everything that expects `multipart/form-data` has been excluded for now.
-- Output typespec are not auto-generated yet
+- Full typespecs for return types and nested types
 
 ### answers
 - /answers
@@ -65,8 +65,7 @@ end
 ## What's not working yet
 
 - Endpoints that expect a file or stream to upload
-- Typespecs for return types, currently everything is `any()`
-- Typespecs for `array` and `oneOf` input types
+- Typespecs `oneOf` input types
 
 ### audio
 - /audio/translations
