@@ -271,20 +271,20 @@ defmodule ExOpenAI.Codegen do
     end
   end
 
-  defp parse_path(
-         path,
-         %{
-           "post" =>
-             %{
-               "operationId" => id,
-               "summary" => summary,
-               "requestBody" => body,
-               "responses" => responses,
-               "x-oaiMeta" => %{"group" => group}
-             } = args
-         },
-         component_mapping
-       ) do
+  def parse_path(
+        path,
+        %{
+          "post" =>
+            %{
+              "operationId" => id,
+              "summary" => summary,
+              "requestBody" => body,
+              "responses" => responses,
+              "x-oaiMeta" => %{"group" => group}
+            } = args
+        },
+        component_mapping
+      ) do
     %{
       endpoint: path,
       name: Macro.underscore(id),
@@ -298,46 +298,46 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  defp parse_path(
-         path,
-         %{
-           "post" =>
-             %{
-               "operationId" => _id,
-               "summary" => _summary,
-               "responses" => _responses,
-               "x-oaiMeta" => _meta
-             } = args
-         },
-         component_mapping
-       ) do
+  def parse_path(
+        path,
+        %{
+          "post" =>
+            %{
+              "operationId" => _id,
+              "summary" => _summary,
+              "responses" => _responses,
+              "x-oaiMeta" => _meta
+            } = args
+        },
+        component_mapping
+      ) do
     parse_path(path, %{"post" => Map.put(args, "requestBody", nil)}, component_mapping)
   end
 
-  defp parse_path(_path, %{"post" => _args}, _component_mapping) do
+  def parse_path(_path, %{"post" => _args}, _component_mapping) do
     # IO.puts("unhandled POST: #{inspect(path)} - #{inspect(args)}")
     nil
   end
 
-  defp parse_path(_path, %{"delete" => _post}, _component_mapping) do
+  def parse_path(_path, %{"delete" => _post}, _component_mapping) do
     # IO.puts("unhandled DELETE: #{inspect(path)} - #{inspect(post)}")
     nil
   end
 
   # "parse GET functions and generate function definition"
-  defp parse_path(
-         path,
-         %{
-           "get" =>
-             %{
-               "operationId" => id,
-               "summary" => summary,
-               "responses" => responses,
-               "x-oaiMeta" => %{"group" => group}
-             } = args
-         },
-         _component_mapping
-       ) do
+  def parse_path(
+        path,
+        %{
+          "get" =>
+            %{
+              "operationId" => id,
+              "summary" => summary,
+              "responses" => responses,
+              "x-oaiMeta" => %{"group" => group}
+            } = args
+        },
+        _component_mapping
+      ) do
     %{
       endpoint: path,
       name: Macro.underscore(id),

@@ -399,4 +399,174 @@ defmodule ExOpenAITest do
              }) == {:object, %{"foo" => {:array, "string"}, "bar" => "number"}}
     end
   end
+
+  describe "parse_path" do
+    test "simple path" do
+      handler_schema =
+        ~S"
+    get:
+      operationId: mypath
+      deprecated: true
+      summary: some summary
+      parameters:
+        - in: path
+          name: arg1
+          required: true
+          schema:
+            type: string
+            example:
+              davinci
+          description: &engine_id_description >
+            The ID of the engine to use for this request
+      responses:
+        \"200\":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: 'string'
+      x-oaiMeta:
+        group: somegroup"
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      expected = %{
+        arguments: [
+          %{example: "davinci", in: "path", name: "arg1", required?: true, type: "string"}
+        ],
+        deprecated?: true,
+        endpoint: "/foo/${engine_id}",
+        group: "somegroup",
+        method: :get,
+        name: "mypath",
+        response_type: :string,
+        summary: "some summary"
+      }
+
+      assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, %{}) == expected
+    end
+
+    test "get path with response component" do
+      handler_schema =
+        ~S"
+    get:
+      operationId: retrieveEngine
+      deprecated: true
+      tags:
+      - OpenAI
+      summary: Retrieves a model instance, providing basic information about it such as the owner and availability.
+      parameters:
+        - in: path
+          name: engine_id
+          required: true
+          schema:
+            type: string
+            example:
+              davinci
+          description: &engine_id_description >
+            The ID of the engine to use for this request
+      responses:
+        \"200\":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Engine'
+      x-oaiMeta:
+        name: Retrieve engine
+        group: engines
+        path: retrieve"
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      expected = %{
+        arguments: [
+          %{example: "davinci", in: "path", name: "engine_id", required?: true, type: "string"}
+        ],
+        deprecated?: true,
+        endpoint: "/foo/${engine_id}",
+        group: "engines",
+        method: :get,
+        name: "retrieve_engine",
+        response_type: {:component, "Engine"},
+        summary:
+          "Retrieves a model instance, providing basic information about it such as the owner and availability."
+      }
+
+      assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, %{}) == expected
+    end
+
+    test "post path with request component" do
+      handler_schema =
+        ~S"
+    post:
+      operationId: retrieveEngine
+      deprecated: true
+      tags:
+      - OpenAI
+      summary: summary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSearchRequest'
+      parameters:
+        - in: path
+          name: engine_id
+          required: true
+          schema:
+            type: string
+            example:
+              davinci
+          description: &engine_id_description >
+            The ID of the engine to use for this request
+      responses:
+        \"200\":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: 'number'
+      x-oaiMeta:
+        name: Retrieve engine
+        group: engines
+        path: retrieve"
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      # CreateSearchRequest inside comp_mapping will get expanded into request_schema key
+      comp_mapping = %{
+        "CreateSearchRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "foo" => %{
+              "type" => "string"
+            }
+          }
+        }
+      }
+
+      expected = %{
+        arguments: [
+          %{example: "davinci", in: "path", name: "engine_id", required?: true, type: "string"}
+        ],
+        deprecated?: true,
+        endpoint: "/foo/${engine_id}",
+        group: "engines",
+        method: :post,
+        name: "retrieve_engine",
+        response_type: :number,
+        summary: "summary",
+        request_body: %{
+          content_type: :"application/json",
+          request_schema: %{"properties" => %{"foo" => %{"type" => "string"}}, "type" => "object"},
+          required?: true
+        }
+      }
+
+      assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, comp_mapping) ==
+               expected
+    end
+  end
 end
