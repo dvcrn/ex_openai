@@ -269,7 +269,7 @@ end)
 
       @type unquote(opts_name) :: unquote(optional_args)
       @spec unquote(name)(unquote_splicing(spec)) :: {:ok, any()} | {:error, any()}
-      @spec unquote(name)(unquote_splicing(spec), [unquote(optional_args)]) ::
+      @spec unquote(name)(unquote_splicing(spec), unquote(optional_args)) ::
               {:ok, unquote(response_spec)} | {:error, any()}
       def unquote(name)(unquote_splicing(arg_names), opts \\ []) do
         # store binding so we can't access args of the function later
