@@ -1,20 +1,45 @@
 defmodule ExOpenAI.Codegen do
+  @moduledoc """
+  Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
+  """
+
   @doc """
   Modules provided by this package that are not in the openapi docs provided by OpenAI
   So instead of generating those, we just provide a fallback
   """
   def module_overwrites, do: [ExOpenAI.Components.Model]
 
-  defp parse_type(%{
-         "type" => "object",
-         "properties" => properties
-       }) do
+  @doc """
+  Parses the given component type, returns a flattened representation of that type
+
+  See tests for some examples:
+  ```elixir
+  assert ExOpenAI.Codegen.parse_type(%{
+   "type" => "object",
+   "properties" => %{
+     "foo" => %{
+       "type" => "array",
+       "items" => %{
+         "type" => "string"
+       }
+     },
+     "bar" => %{
+       "type" => "number"
+     }
+   }
+  }) == {:object, %{"foo" => {:array, "string"}, "bar" => "number"}}
+  ```
+  """
+  def parse_type(%{
+        "type" => "object",
+        "properties" => properties
+      }) do
     parsed_obj =
       properties
       |> Enum.map(fn {name, obj} ->
         case obj do
-          %{"type" => type} ->
-            {name, type}
+          %{"type" => _type} ->
+            {name, parse_type(obj)}
 
           %{"$ref" => ref} ->
             {name, {:component, String.replace(ref, "#/components/schemas/", "")}}
@@ -22,20 +47,20 @@ defmodule ExOpenAI.Codegen do
       end)
       |> Enum.into(%{})
 
-    parsed_obj
+    {:object, parsed_obj}
   end
 
-  defp parse_type(%{
-         "type" => "array",
-         "items" => items
-       }) do
+  def parse_type(%{
+        "type" => "array",
+        "items" => items
+      }) do
     case items do
       # on nested array, recurse deeper
       %{"type" => "array", "items" => nested} ->
         {:array, parse_type(nested)}
 
       %{"type" => "object"} ->
-        {:object, parse_type(items)}
+        parse_type(items)
 
       %{"type" => _type} ->
         parse_type(items)
@@ -49,20 +74,22 @@ defmodule ExOpenAI.Codegen do
       x ->
         IO.puts("invalid type: #{inspect(x)}")
     end
+    |> (&{:array, &1}).()
   end
 
-  defp parse_type(%{"type" => type}), do: type
+  def parse_type(%{"type" => type}), do: type
 
-  defp parse_property(
-         %{
-           "type" => "array",
-           "items" => _items
-         } = args
-       ) do
-    parse_property(Map.put(args, "type", {:array, parse_type(args)}))
+  def parse_property(
+        %{
+          "type" => "array",
+          "items" => _items
+        } = args
+      ) do
+    # parse_type returns {:array, XXX} for array type, so in contrast to object we don't need to wrap it again because it's already wrapped
+    parse_property(Map.put(args, "type", parse_type(args)))
   end
 
-  defp parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
+  def parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
     # parse oneOf array into a list of schemas
     #    "oneOf" => [
     #      %{
@@ -91,21 +118,21 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  defp parse_property(
-         %{
-           "type" => "object",
-           "properties" => _properties
-         } = args
-       ) do
-    parse_property(Map.put(args, "type", {:object, parse_type(args)}))
+  def parse_property(
+        %{
+          "type" => "object",
+          "properties" => _properties
+        } = args
+      ) do
+    parse_property(Map.put(args, "type", parse_type(args)))
   end
 
-  defp parse_property(
-         %{
-           "type" => type,
-           "name" => name
-         } = args
-       ) do
+  def parse_property(
+        %{
+          "type" => type,
+          "name" => name
+        } = args
+      ) do
     %{
       type: type,
       name: name,
@@ -116,7 +143,7 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  defp parse_property(args) do
+  def parse_property(args) do
     IO.puts("Unknown property: #{inspect(args)}")
   end
 
@@ -124,7 +151,35 @@ defmodule ExOpenAI.Codegen do
     Enum.map(props, &parse_property(&1))
   end
 
-  defp parse_component_schema(%{"properties" => props, "required" => required}) do
+  @doc """
+  Parses the given schema recursively into a normalize representation such as `%{description: "", example: "", name: "", type: ""}`.
+
+  A "component schema" is what is defined in the original OpenAI openapi document under the path /components/schema and could look like this:
+
+  ```
+    ChatCompletionRequestMessage:
+      type: object
+      properties:
+      content:
+        type: string
+        description: The contents of the message
+      name:
+        type: string
+        description: The name of the user in a multi-user chat
+      required:
+      - name
+  ```
+
+  - `required_props` will consist of all properties that were listed under the "required" list
+  - `optional_props` will be all others
+
+  "Type" will get normalized into a internal representation consiting of all it's nested children that can be unfolded easily later on:
+  - "string" -> "string"
+  - "integer" -> "integer"
+  - "object" -> {:object, %{nestedobject...}}
+  - "array" -> {:array, "string" | "integer" | etc}
+  """
+  def parse_component_schema(%{"properties" => props, "required" => required}) do
     # turn required stuf into hashmap for quicker access and merge into actual properties
     required_map = required |> Enum.reduce(%{}, fn item, acc -> Map.put(acc, item, true) end)
 
@@ -145,7 +200,7 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  defp parse_component_schema(%{"properties" => props}),
+  def parse_component_schema(%{"properties" => props}),
     do: parse_component_schema(%{"properties" => props, "required" => []})
 
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
@@ -354,7 +409,7 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
 
   def type_to_spec(x) do
-    IO.puts("unhandled: #{inspect(x)}")
+    IO.puts("type_to_spec: unhandled: #{inspect(x)}")
     quote(do: any())
   end
 
