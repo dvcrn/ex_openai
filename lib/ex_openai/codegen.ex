@@ -271,6 +271,58 @@ defmodule ExOpenAI.Codegen do
     end
   end
 
+  @doc """
+  Parses a given "path". A path is what is mapped under the "paths" key of the OpenAI openapi docs, and represents an API endpoint (GET, POST, DELETE, PUT)
+
+  The result is a normalized Map representation of the parsed path, including arguments, body and return values
+
+  - `response_type` will be the type value (:string, :integer). Components are represented as {:component, %{"a" => "string"}}
+  - `request_body` on the other hand will not reference the request component but instead inline it. This decision was made to have all type information available as is for the signature, whereas it is not as important for the response
+
+  Example parsed construct:
+  ```elixir
+  %{
+    arguments: [
+      %{example: "davinci", in: "path", name: "engine_id", required?: true, type: "string"}
+    ],
+    deprecated?: true,
+    endpoint: "/foo/${engine_id}",
+    group: "engines",
+    method: :post,
+    name: "retrieve_engine",
+    response_type: :number,
+    summary: "summary",
+    request_body: %{
+      content_type: :"application/json",
+      request_schema: %{"properties" => %{"foo" => %{"type" => "string"}}, "type" => "object"},
+      required?: true
+    }
+    }
+  ```
+
+  Example from the API docs:
+  ```yaml
+   /engines:
+    get:
+      operationId: listEngines
+      deprecated: true
+      tags:
+      - OpenAI
+      summary: Lists the currently available (non-finetuned) models, and provides basic information about each one such as the owner and availability.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListEnginesResponse'
+      x-oaiMeta:
+        name: List engines
+        group: engines
+        path: list
+    ```
+
+  """
   def parse_path(
         path,
         %{
