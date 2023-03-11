@@ -1,7 +1,7 @@
 defmodule ExOpenAI.Codegen do
-  @moduledoc """
-  Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
-  """
+  @moduledoc false
+
+  # Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
 
   @doc """
   Modules provided by this package that are not in the openapi docs provided by OpenAI
