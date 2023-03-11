@@ -81,10 +81,12 @@ end
 import Config
 
 config :ex_openai,
-  api_key: "your-api-key", # find it at https://platform.openai.com/account/api-keys
-  organization_key: "your-organization-key", # find it at https://platform.openai.com/account/api-keys
-  http_options: [recv_timeout: 30_000] # optional, passed to [HTTPoison.Request](https://hexdocs.pm/httpoison/HTTPoison.Request.html) options
-
+  # find it at https://platform.openai.com/account/api-keys
+  api_key: System.get_env("OPENAI_API_KEY"),
+  # find it at https://platform.openai.com/account/api-keys
+  organization_key: System.get_env("OPENAI_ORGANIZATION_KEY"),
+  # optional, passed to [HTTPoison.Request](https://hexdocs.pm/httpoison/HTTPoison.Request.html) options
+  http_options: [recv_timeout: 50_000]
 ```
 
 ## Usage
