@@ -1,4 +1,4 @@
-# ExOpenAI
+# Feature-complete Elixir SDK for OpenAI APIs
 
 [![Hex.pm Version](https://img.shields.io/hexpm/v/ex_openai)](https://hex.pm/packages/ex_openai)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_openai)
@@ -12,11 +12,12 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 
 ## Features
 
-- Up-to-date thanks to metaprogramming
-- Strictly following the official OpenAI APIs
-- Auto-generated function documentation
+- Up-to-date and complete thanks to metaprogramming and code-generation
+- Implements *everything* the OpenAI has to offer
+- Strictly follows the official OpenAI APIs for argument/function naming 
+- Handling of required arguments as function parameters and optional arguments as Keyword list in true Elixir-fashion
+- Auto-generated embedded function documentation
 - Auto-generated @spec definitions for dialyzer, for strict parameter typing 
-- Handling of required arguments as function parameters and optionals as Keyword list
 
 ## Installation
 Add ***:ex_openai*** as a dependency in your mix.exs file.
@@ -28,13 +29,7 @@ def deps do
   ]
 end
 ```
-
-## What's working
-
-- All GET/POST requests that don't require handling of stream/file uploads
-- Full typespecs for return types and nested types
-
-### Supported endpoints
+## Supported endpoints (basically everything)
 
 - /answers
 - /chat/completions
@@ -44,15 +39,20 @@ end
 - /embeddings
 - /engines/{engine_id}
 - /engines
+- /files
 - /files/{file_id}/content
 - /fine-tunes/{fine_tune_id}/events
 - /fine-tunes/{fine_tune_id}/cancel
 - /fine-tunes/{fine_tune_id}
 - /fine-tunes
 - /images/generations
+- /images/variations
+- /images/edits
 - /models
 - /moderations
 - /engines/{engine_id}/search
+- /audio/translations
+- /audio/transcriptions
 
 ### Editor features: Autocomplete, specs, docs
 
@@ -70,19 +70,10 @@ end
 
 
 
-## What's not working yet
+## To Do's
 
-- Endpoints that expect a file or stream to upload
-- DELETE/PUT requests (there are some)
 - Typespecs for `oneOf` input types, currently represented as `any()`
 
-### Not yet supported endpoints
-
-- /audio/translations
-- /audio/transcriptions
-- /files
-- /images/variations
-- /images/edits
 
 ## Configuration
 
@@ -173,6 +164,18 @@ msgs = [
       "8043" => -100
     }
   )
+```
+
+### Usage of endpoints that require files to upload
+
+Load your file into memory, then pass it into the file parameter
+
+```elixir
+duck = File.read!("#{__DIR__}/testdata/duck.png")
+
+{:ok, res} = ExOpenAI.Images.create_image_variation(duck)
+
+IO.inspect(res.data)
 ```
 
 ## How to update once OpenAI changes something?
