@@ -185,6 +185,7 @@ end)
               else: s
 
           s
+          |> String.replace("/docs/", "https://platform.openai.com/docs/")
         end)
 
       merged_optional_args =
@@ -211,6 +212,7 @@ end)
               else: s
 
           s
+          |> String.replace("/docs/", "https://platform.openai.com/docs/")
         end)
 
       # convert non-optional args into [arg1, arg2, arg3] representation
@@ -247,9 +249,9 @@ end)
         end)
 
       @doc """
-      Endpoint `#{endpoint}`
-
       #{summary}
+
+      Endpoint `#{endpoint}`
 
       ---
 
