@@ -77,6 +77,8 @@ defmodule ExOpenAI.Codegen do
     |> (&{:array, &1}).()
   end
 
+  def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
+
   def parse_type(%{"type" => type}), do: type
 
   def parse_property(
@@ -134,7 +136,7 @@ defmodule ExOpenAI.Codegen do
         } = args
       ) do
     %{
-      type: type,
+      type: parse_type(args),
       name: name,
       # optional
       description: Map.get(args, "description", ""),
@@ -222,20 +224,13 @@ defmodule ExOpenAI.Codegen do
       rest["schema"]["$ref"]
       |> String.replace_prefix("#/components/schemas/", "")
 
-    case content_type do
-      "application/json" ->
-        %{
-          required?: required,
-          content_type: String.to_atom(content_type),
-          # rest: rest,
-          # ref: ref,
-          request_schema: Map.get(component_mapping, ref)
-        }
-
-      # TODO: other types like multipart/form-data is not supported yet
-      _ ->
-        :unsupported_content_type
-    end
+    %{
+      required?: required,
+      content_type: String.to_atom(content_type),
+      # rest: rest,
+      # ref: ref,
+      request_schema: Map.get(component_mapping, ref)
+    }
   end
 
   defp parse_request_body(nil, _) do
@@ -428,6 +423,7 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("integer"), do: quote(do: integer())
   def type_to_spec("boolean"), do: quote(do: boolean())
   def type_to_spec("string"), do: quote(do: String.t())
+  def type_to_spec("bitstring"), do: quote(do: bitstring())
   # TODO: handle these types here better
   def type_to_spec("array"), do: quote(do: list())
   def type_to_spec("object"), do: quote(do: map())

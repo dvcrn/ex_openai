@@ -173,6 +173,12 @@ end)
 
       name = String.to_atom(function_name)
 
+      content_type =
+        with body when not is_nil(body) <- Map.get(fx, :request_body, %{}),
+             ct <- Map.get(body, :content_type, :"application/json") do
+          ct
+        end
+
       merged_required_args =
         case method do
           # POST methods have body arguments on top of positional URL ones
@@ -293,6 +299,7 @@ end)
         arguments = required_arguments ++ optional_arguments
         url = "#{unquote(endpoint)}"
         method = unquote(method)
+        request_content_type = unquote(content_type)
 
         # merge all passed args together, so opts + passed
         all_passed_args = Keyword.merge(binding, opts) |> Keyword.drop([:opts])
@@ -338,7 +345,7 @@ end)
             ])
           )
 
-        case ExOpenAI.Client.api_call(method, url, body_params, opts) do
+        case ExOpenAI.Client.api_call(method, url, body_params, request_content_type, opts) do
           {:ok, res} ->
             case unquote(response_type) do
               {:component, comp} ->

@@ -10,6 +10,8 @@ defmodule ExOpenAITest do
       assert ExOpenAI.Codegen.type_to_spec(:integer) == {:integer, [], []}
       assert ExOpenAI.Codegen.type_to_spec("boolean") == {:boolean, [], []}
       assert ExOpenAI.Codegen.type_to_spec(:boolean) == {:boolean, [], []}
+      assert ExOpenAI.Codegen.type_to_spec("bitstring") == {:bitstring, [], []}
+      assert ExOpenAI.Codegen.type_to_spec(:bitstring) == {:bitstring, [], []}
 
       assert ExOpenAI.Codegen.type_to_spec("string") ==
                {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
@@ -276,6 +278,58 @@ defmodule ExOpenAITest do
           %{description: "", example: "", name: "id", type: "string"},
           %{description: "", example: "", name: "model", type: "string"},
           %{description: "", example: "", name: "object", type: "string"}
+        ]
+      }
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == expected
+    end
+
+    test "schema with binary string" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+      properties:
+        image:
+          description: imgdesc
+          type: string
+          format: binary
+        mask:
+          description: maskdesc
+          type: string
+          format: binary
+        prompt:
+          description: promptdesc
+          type: string
+          example: \"A cute baby sea otter wearing a beret\"
+      required:
+        - prompt
+        - image
+        ")
+        |> List.first()
+
+      expected = %{
+        optional_props: [
+          %{
+            description: "maskdesc",
+            example: "",
+            name: "mask",
+            type: "bitstring"
+          }
+        ],
+        required_props: [
+          %{
+            description: "imgdesc",
+            example: "",
+            name: "image",
+            type: "bitstring"
+          },
+          %{
+            description: "promptdesc",
+            example: "A cute baby sea otter wearing a beret",
+            name: "prompt",
+            type: "string"
+          }
         ]
       }
 
@@ -561,6 +615,76 @@ defmodule ExOpenAITest do
         request_body: %{
           content_type: :"application/json",
           request_schema: %{"properties" => %{"foo" => %{"type" => "string"}}, "type" => "object"},
+          required?: true
+        }
+      }
+
+      assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, comp_mapping) ==
+               expected
+    end
+
+    test "post with multipart/form-data" do
+      handler_schema =
+        ~S"
+    post:
+      operationId: createImageEdit
+      tags:
+      - OpenAI
+      summary: Creates an edited or extended image given an original image and a prompt.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateImageEditRequest'
+      responses:
+        \"200\":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImagesResponse'
+      x-oaiMeta:
+        name: Create image edit
+        group: images
+        path: create-edit
+        beta: true"
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      # CreateSearchRequest inside comp_mapping will get expanded into request_schema key
+      comp_mapping = %{
+        "CreateImageEditRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "image" => %{
+              "type" => "bitstring"
+            },
+            "mask" => %{
+              "type" => "bitstring"
+            }
+          }
+        }
+      }
+
+      expected = %{
+        arguments: [],
+        deprecated?: false,
+        endpoint: "/foo/${engine_id}",
+        group: "images",
+        method: :post,
+        name: "create_image_edit",
+        response_type: {:component, "ImagesResponse"},
+        summary: "Creates an edited or extended image given an original image and a prompt.",
+        request_body: %{
+          content_type: :"multipart/form-data",
+          request_schema: %{
+            "type" => "object",
+            "properties" => %{
+              "image" => %{"type" => "bitstring"},
+              "mask" => %{"type" => "bitstring"}
+            }
+          },
           required?: true
         }
       }
