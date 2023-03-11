@@ -62,7 +62,7 @@ end)
   # module start
   defmodule name do
     @moduledoc """
-    Schema representing a #{Module.split(name) |> List.first()} within the OpenAI API
+    Schema representing a #{Module.split(name) |> List.last()} within the OpenAI API
     """
 
     @type t :: %unquote(name){
@@ -143,15 +143,21 @@ docs
 |> Enum.reduce(%{}, fn fx, acc ->
   Map.put(acc, fx.group, [fx | Map.get(acc, fx.group, [])])
 end)
-|> Enum.each(fn {modname, functions} ->
+|> Enum.each(fn {name, functions} ->
   modname =
-    modname
+    name
     |> String.replace("-", "_")
     |> Macro.camelize()
     |> String.to_atom()
     |> (&Module.concat(ExOpenAI, &1)).()
 
   defmodule modname do
+    @moduledoc """
+    Modules for interacting with the `#{name}` group of OpenAI APIs
+
+    API Reference: https://platform.openai.com/docs/api-reference/#{name}
+    """
+
     functions
     |> Enum.each(fn fx ->
       %{
