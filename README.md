@@ -31,59 +31,47 @@ end
 
 ## What's working
 
-- Basically everything that uses `application/json` is working, and everything that requires upload of a stream/file is not. To avoid confusion, everything that expects `multipart/form-data` has been excluded for now.
+- All GET/POST requests that don't require handling of stream/file uploads
 - Full typespecs for return types and nested types
 
 ### Supported endpoints
 
-#### answers
 - /answers
-#### chat
 - /chat/completions
-#### classifications
 - /classifications
-#### completions
 - /completions
-#### edits
 - /edits
-#### embeddings
 - /embeddings
-#### engines
 - /engines/{engine_id}
 - /engines
-#### files
 - /files/{file_id}/content
-#### fine-tunes
 - /fine-tunes/{fine_tune_id}/events
 - /fine-tunes/{fine_tune_id}/cancel
 - /fine-tunes/{fine_tune_id}
 - /fine-tunes
-#### images
 - /images/generations
-#### models
 - /models
-#### moderations
 - /moderations
-#### searches
 - /engines/{engine_id}/search
 
-### Editor features: Autocomplete and typehinting
+### Editor features: Autocomplete, specs, docs
 
+![autocomplete](images/autocomplete.png)
+
+![function docs](images/functiondocs.png)
 
 
 ## What's not working yet
 
 - Endpoints that expect a file or stream to upload
+- DELETE/PUT requests (there are some)
 - Typespecs for `oneOf` input types, currently represented as `any()`
 
 ### Not yet supported endpoints
 
-#### audio
 - /audio/translations
 - /audio/transcriptions
-#### files
 - /files
-#### images
 - /images/variations
 - /images/edits
 
