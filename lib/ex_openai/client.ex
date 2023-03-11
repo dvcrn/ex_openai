@@ -81,7 +81,7 @@ defmodule ExOpenAI.Client do
         # Strings can be valid bitstreams and bitstreams are valid binaries
         # Using String.valid? for comparison instead
         is_bitstring(content) and not String.valid?(content) ->
-          {"file", content, {"form-data", [name: strname, filename: "#{name}.png"]}, []}
+          {"file", content, {"form-data", [name: strname, filename: "#{name}"]}, []}
 
         true ->
           {strname, content}
