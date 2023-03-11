@@ -131,7 +131,7 @@ defmodule ExOpenAI.Codegen do
 
   def parse_property(
         %{
-          "type" => type,
+          "type" => _type,
           "name" => name
         } = args
       ) do
