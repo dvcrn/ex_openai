@@ -1,10 +1,10 @@
-# Unofficial Complete Elixir SDK for OpenAI APIs
+# Elixir SDK for OpenAI APIs
 
 [![Hex.pm Version](https://img.shields.io/hexpm/v/ex_openai)](https://hex.pm/packages/ex_openai)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_openai)
 [![Hex.pm Download Total](https://img.shields.io/hexpm/dt/ex_openai)](https://hex.pm/packages/ex_openai)
 
-ExOpenAI is an Elixir SDK for interacting with the [OpenAI APIs](https://platform.openai.com/docs/api-reference/introduction)
+ExOpenAI is an (unofficial) Elixir SDK for interacting with the [OpenAI APIs](https://platform.openai.com/docs/api-reference/introduction)
 
 This SDK is fully auto-generated using [metaprogramming](https://elixirschool.com/en/lessons/advanced/metaprogramming/) and should always reflect the latest state of the OpenAI API.
 
@@ -70,9 +70,10 @@ end
 
 
 
-## To Do's
+## To Do's / What's not working yet
 
 - Typespecs for `oneOf` input types, currently represented as `any()`
+- Streams: Some APIs allow you to set `stream: true` to stream the responses through [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format). This is not supported (yet)
 
 
 ## Configuration
