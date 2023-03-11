@@ -62,6 +62,8 @@ end
 
 #### Typechecking and diagnostics through strict @spec definitions
 
+<img src="images/diagnostics.png" width="500" />
+
 #### Inline docs and signatures thanks to @spec and @doc
 
 <img src="images/functiondocs.png" width="600" />
