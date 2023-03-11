@@ -1,7 +1,7 @@
 # ExOpenAI
 
 [![Hex.pm Version](https://img.shields.io/hexpm/v/ex_openai)](https://hex.pm/packages/ex_openai)
-[![Hexdocs](https://img.shields.io/hexdocs/v/ex_openai)](https://hexdocs.pm/ex_openai)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_openai)
 [![Hex.pm Download Total](https://img.shields.io/hexpm/dt/ex_openai)](https://hex.pm/packages/ex_openai)
 
 ExOpenAI is an Elixir SDK for interacting with the [OpenAI APIs](https://platform.openai.com/docs/api-reference/introduction)
