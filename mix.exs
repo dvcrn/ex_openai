@@ -33,7 +33,7 @@ defmodule ExOpenAI.MixProject do
 
   defp description do
     """
-    ExOpenAI is an auto-generated Elixir SDK for OpenAI APIs
+    Fully auto-generated Elixir SDK for OpenAI APIs with proper typespec and @docs
     """
   end
 
