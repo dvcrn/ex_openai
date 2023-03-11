@@ -1,7 +1,8 @@
 defmodule ExOpenAI do
   @moduledoc """
-  Provides API wrappers for OpenAI API
-  See https://beta.openai.com/docs/api-reference/introduction for further info on REST endpoints
+  Auto-generated SDK for OpenAI APIs
+  See https://platform.openai.com/docs/api-reference/introduction for further info on REST endpoints
+  Make sure to refer to the README on Github to see what is implemented and what isn't yet
   """
 
   use Application
@@ -60,6 +61,10 @@ end)
 
   # module start
   defmodule name do
+    @moduledoc """
+    Schema representing a #{Module.split(name) |> List.first()} within the OpenAI API
+    """
+
     @type t :: %unquote(name){
             unquote_splicing(
               struct_fields
@@ -76,11 +81,10 @@ end)
 
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
-    @doc """
-    Helper function to return the full AST representation of the type and all it's nested types
-    This is used so that all atoms in the map are getting allocated recursively.
-    Without this, we wouldn't be able to safely do String.to_existing_atom()
-    """
+    # Helper function to return the full AST representation of the type and all it's nested types
+    # This is used so that all atoms in the map are getting allocated recursively.
+    # Without this, we wouldn't be able to safely do String.to_existing_atom()
+    @doc false
     def unpack_ast(partial_tree \\ %{}) do
       resolved_mods = Map.get(partial_tree, :resolved_mods, [])
       partial_tree = Map.put(partial_tree, :resolved_mods, resolved_mods)
@@ -135,6 +139,7 @@ end)
 # generate modules
 docs
 |> Map.get(:functions)
+# group all the functions by their 'group', to cluster them into Module.Group
 |> Enum.reduce(%{}, fn fx, acc ->
   Map.put(acc, fx.group, [fx | Map.get(acc, fx.group, [])])
 end)
@@ -150,19 +155,21 @@ end)
     functions
     |> Enum.each(fn fx ->
       %{
-        name: name,
+        name: function_name,
         summary: summary,
         arguments: args,
         endpoint: endpoint,
         deprecated?: deprecated,
         method: method,
-        response_type: response_type
+        response_type: response_type,
+        group: group
       } = fx
 
-      name = String.to_atom(name)
+      name = String.to_atom(function_name)
 
       merged_required_args =
         case method do
+          # POST methods have body arguments on top of positional URL ones
           :post ->
             args ++
               if(is_nil(fx.request_body),
@@ -251,7 +258,11 @@ end)
       @doc """
       #{summary}
 
-      Endpoint `#{endpoint}`
+      Endpoint: `https://api.openai.com/v1#{endpoint}`
+
+      Method: #{Atom.to_string(method) |> String.upcase()}
+
+      Docs: https://platform.openai.com/docs/api-reference/#{group}
 
       ---
 
@@ -266,10 +277,6 @@ end)
       """
       if deprecated, do: @deprecated("Deprecated by OpenAI")
 
-      opts_name =
-        name |> Atom.to_string() |> Kernel.<>("_opts") |> String.to_atom() |> Macro.var(nil)
-
-      @type unquote(opts_name) :: unquote(optional_args)
       @spec unquote(name)(unquote_splicing(spec)) :: {:ok, any()} | {:error, any()}
       @spec unquote(name)(unquote_splicing(spec), unquote(optional_args)) ::
               {:ok, unquote(response_spec)} | {:error, any()}
@@ -312,7 +319,6 @@ end)
         url = url <> "?" <> query
 
         # construct body with the remaining args
-
         body_params =
           arguments
           # filter by all the rest, so neither query nor path
