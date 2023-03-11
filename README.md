@@ -6,15 +6,17 @@
 
 ExOpenAI is an Elixir SDK for interacting with the [OpenAI APIs](https://platform.openai.com/docs/api-reference/introduction)
 
-This SDK is auto-generated using [metaprogramming](https://elixirschool.com/en/lessons/advanced/metaprogramming/) and should reflect the latest state of the OpenAI API.
+This SDK is fully auto-generated using [metaprogramming](https://elixirschool.com/en/lessons/advanced/metaprogramming/) and should always reflect the latest state of the OpenAI API.
 
-**Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you find anything acting up.
+**Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you notice anything acting up.
 
 ## Features
 
 - Up-to-date thanks to metaprogramming
+- Strictly following the official OpenAI APIs
 - Auto-generated function documentation
-- Function arguments and opts @spec definitions for dialyzer, for strict parameter typing 
+- Auto-generated @spec definitions for dialyzer, for strict parameter typing 
+- Handling of required arguments as function parameters and optionals as Keyword list
 
 ## Installation
 Add ***:ex_openai*** as a dependency in your mix.exs file.
@@ -32,48 +34,56 @@ end
 - Basically everything that uses `application/json` is working, and everything that requires upload of a stream/file is not. To avoid confusion, everything that expects `multipart/form-data` has been excluded for now.
 - Full typespecs for return types and nested types
 
-### answers
+### Supported endpoints
+
+#### answers
 - /answers
-### chat
+#### chat
 - /chat/completions
-### classifications
+#### classifications
 - /classifications
-### completions
+#### completions
 - /completions
-### edits
+#### edits
 - /edits
-### embeddings
+#### embeddings
 - /embeddings
-### engines
+#### engines
 - /engines/{engine_id}
 - /engines
-### files
+#### files
 - /files/{file_id}/content
-### fine-tunes
+#### fine-tunes
 - /fine-tunes/{fine_tune_id}/events
 - /fine-tunes/{fine_tune_id}/cancel
 - /fine-tunes/{fine_tune_id}
 - /fine-tunes
-### images
+#### images
 - /images/generations
-### models
+#### models
 - /models
-### moderations
+#### moderations
 - /moderations
-### searches
+#### searches
 - /engines/{engine_id}/search
+
+### Editor features: Autocomplete and typehinting
+
+
 
 ## What's not working yet
 
 - Endpoints that expect a file or stream to upload
-- Typespecs `oneOf` input types
+- Typespecs for `oneOf` input types, currently represented as `any()`
 
-### audio
+### Not yet supported endpoints
+
+#### audio
 - /audio/translations
 - /audio/transcriptions
-### files
+#### files
 - /files
-### images
+#### images
 - /images/variations
 - /images/edits
 
