@@ -404,7 +404,7 @@ defmodule ExOpenAI.Codegen do
 
   def get_documentation do
     {:ok, yml} =
-      File.read!("docs.yaml")
+      File.read!("#{__DIR__}/docs/docs.yaml")
       |> YamlElixir.read_from_string()
 
     component_mapping =
