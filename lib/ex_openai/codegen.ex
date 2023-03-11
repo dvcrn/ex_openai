@@ -416,8 +416,6 @@ defmodule ExOpenAI.Codegen do
         yml["paths"]
         |> Enum.map(fn {path, field_data} -> parse_path(path, field_data, component_mapping) end)
         |> Enum.filter(&(!is_nil(&1)))
-        # TODO: implement form-data
-        |> Enum.filter(&Kernel.!=(Map.get(&1, :request_body, nil), :unsupported_content_type))
     }
   end
 
