@@ -172,7 +172,7 @@ msgs = [
 
 ## How to update once OpenAI changes something?
 
-Run `mix update_docs` and commit the new `docs.yaml` file
+Run `mix update_openai_docs` and commit the new `docs.yaml` file
 
 ## License
 The package is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

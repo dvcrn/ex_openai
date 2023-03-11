@@ -487,4 +487,11 @@ defmodule ExOpenAI.Codegen do
 
   def keys_to_atoms(value) when is_list(value), do: Enum.map(value, &keys_to_atoms/1)
   def keys_to_atoms(value), do: value
+
+  @spec fix_openai_links(String.t()) :: String.t()
+  def fix_openai_links(s) do
+    s
+    |> String.replace("/docs/", "https://platform.openai.com/docs/")
+    |> String.replace("/tokenizer", "https://platform.openai.com/tokenizer")
+  end
 end

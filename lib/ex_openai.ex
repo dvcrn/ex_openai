@@ -198,7 +198,6 @@ end)
               else: s
 
           s
-          |> String.replace("/docs/", "https://platform.openai.com/docs/")
         end)
 
       merged_optional_args =
@@ -225,7 +224,6 @@ end)
               else: s
 
           s
-          |> String.replace("/docs/", "https://platform.openai.com/docs/")
         end)
 
       # convert non-optional args into [arg1, arg2, arg3] representation
@@ -262,7 +260,7 @@ end)
         end)
 
       @doc """
-      #{summary}
+      #{summary |> ExOpenAI.Codegen.fix_openai_links()}
 
       Endpoint: `https://api.openai.com/v1#{endpoint}`
 
@@ -274,12 +272,12 @@ end)
 
       ### Required Arguments:
 
-      #{required_args_docstring}
+      #{required_args_docstring |> ExOpenAI.Codegen.fix_openai_links()}
 
 
       ### Optional Arguments:
 
-      #{optional_args_docstring}
+      #{optional_args_docstring |> ExOpenAI.Codegen.fix_openai_links()}
       """
       if deprecated, do: @deprecated("Deprecated by OpenAI")
 
