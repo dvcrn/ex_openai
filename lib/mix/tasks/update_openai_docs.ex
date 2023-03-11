@@ -11,8 +11,6 @@ defmodule Mix.Tasks.UpdateOpenaiDocs do
   def run(_) do
     File.mkdir_p!(@target_dir)
     docs_url = "https://raw.githubusercontent.com/openai/openai-openapi/master/openapi.yaml"
-    args = ["-L", docs_url, "-o", "#{@target_dir}/docs.yaml"]
-    IO.inspect(args)
-    System.cmd("curl", args)
+    System.cmd("curl", ["-L", docs_url, "-o", "#{@target_dir}/docs.yaml"])
   end
 end
