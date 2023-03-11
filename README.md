@@ -56,9 +56,16 @@ end
 
 ### Editor features: Autocomplete, specs, docs
 
-![autocomplete](images/autocomplete.png)
+#### Autocompletion/type-hinting through LSP / ElixirSense
 
-![function docs](images/functiondocs.png)
+<img src="images/autocomplete.png" width="500" />
+
+#### Typechecking and diagnostics through strict @spec definitions
+
+#### Inline docs and signatures thanks to @spec and @doc
+
+<img src="images/functiondocs.png" width="600" />
+
 
 
 ## What's not working yet
