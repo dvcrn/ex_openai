@@ -361,14 +361,11 @@ defmodule ExOpenAI.Codegen do
     parse_path(path, %{"post" => Map.put(args, "requestBody", nil)}, component_mapping)
   end
 
-  def parse_path(_path, %{"post" => _args}, _component_mapping) do
-    # IO.puts("unhandled POST: #{inspect(path)} - #{inspect(args)}")
-    nil
-  end
+  def parse_path(path, %{"delete" => args}, component_mapping) do
+    # delete is kind of same as with GET, so we can just parse with the GET path and swap out the method :)
 
-  def parse_path(_path, %{"delete" => _post}, _component_mapping) do
-    # IO.puts("unhandled DELETE: #{inspect(path)} - #{inspect(post)}")
-    nil
+    parse_path(path, %{"get" => args}, component_mapping)
+    |> Map.put(:method, :delete)
   end
 
   # "parse GET functions and generate function definition"
@@ -395,6 +392,11 @@ defmodule ExOpenAI.Codegen do
       group: group,
       response_type: extract_response_type(responses)
     }
+  end
+
+  def parse_path(path, args, _component_mapping) do
+    IO.puts("unhandled path: #{inspect(path)} - #{inspect(args)}")
+    nil
   end
 
   def get_documentation do

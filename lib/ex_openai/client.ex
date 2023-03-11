@@ -111,6 +111,9 @@ defmodule ExOpenAI.Client do
   def api_call(:post, url, params, _request_content_type, request_options),
     do: api_post(url, params, request_options)
 
+  def api_call(:delete, url, _params, _request_content_type, request_options),
+    do: api_delete(url, request_options)
+
   def request_headers do
     [
       bearer(),

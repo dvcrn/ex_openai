@@ -191,6 +191,9 @@ end)
 
           :get ->
             Enum.filter(args, &Map.get(&1, :required?))
+
+          :delete ->
+            Enum.filter(args, &Map.get(&1, :required?))
         end
 
       required_args_docstring =
@@ -216,6 +219,9 @@ end)
               )
 
           :get ->
+            Enum.filter(args, &(!Map.get(&1, :required?)))
+
+          :delete ->
             Enum.filter(args, &(!Map.get(&1, :required?)))
         end
 
