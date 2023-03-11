@@ -4,7 +4,7 @@ defmodule ExOpenAI.MixProject do
   def project do
     [
       app: :ex_openai,
-      version: "0.2.1",
+      version: "0.3.0",
       elixir: "~> 1.11",
       description: description(),
       start_permanent: Mix.env() == :prod,
@@ -33,7 +33,7 @@ defmodule ExOpenAI.MixProject do
 
   defp description do
     """
-    Fully auto-generated Elixir SDK for OpenAI APIs with proper typespec and @docs support
+    Auto-generated Elixir SDK for OpenAI APIs with proper typespec and @docs support
     """
   end
 
