@@ -160,8 +160,6 @@ ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
 
 ### Using ChatGPT APIs
 
-No @spec for "object" and "array" types available yet, so just follow the OpenAPI documentation:
-
 ```elixir
 msgs = [
   %{role: "user", content: "Hello!"},
