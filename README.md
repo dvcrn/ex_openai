@@ -1,4 +1,4 @@
-# Feature-complete Elixir SDK for OpenAI APIs
+# Complete Elixir SDK for OpenAI APIs
 
 [![Hex.pm Version](https://img.shields.io/hexpm/v/ex_openai)](https://hex.pm/packages/ex_openai)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_openai)
