@@ -42,8 +42,8 @@ end)
 |> Enum.filter(fn {name, _c} -> name not in ExOpenAI.Codegen.module_overwrites() end)
 |> Enum.each(fn {name, component} ->
   struct_fields =
-    [component.required_props, component.optional_props]
-    |> Enum.map(fn i ->
+    [{:required, component.required_props}, {:optional, component.optional_props}]
+    |> Enum.map(fn {kind, i} ->
       Enum.reduce(
         i,
         %{},
@@ -51,9 +51,18 @@ end)
           name = item.name
           type = item.type
 
-          Map.merge(acc, %{
-            String.to_atom(name) => quote(do: unquote(ExOpenAI.Codegen.type_to_spec(type)))
-          })
+          case kind do
+            :required ->
+              Map.merge(acc, %{
+                String.to_atom(name) => quote(do: unquote(ExOpenAI.Codegen.type_to_spec(type)))
+              })
+
+            :optional ->
+              Map.merge(acc, %{
+                String.to_atom(name) =>
+                  quote(do: unquote(ExOpenAI.Codegen.type_to_spec(type)) | nil)
+              })
+          end
         end
       )
     end)
