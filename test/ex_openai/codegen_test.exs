@@ -41,7 +41,8 @@ defmodule ExOpenAITest do
 
     test "component" do
       assert ExOpenAI.Codegen.type_to_spec({:component, "Foobar"}) ==
-               {{:., [], [ExOpenAI.Components.Foobar, :t]}, [], []}
+               {{:., [], [{:__aliases__, [alias: false], [:ExOpenAI, :Components, :Foobar]}, :t]},
+                [], []}
     end
 
     test "complex nesting" do
@@ -65,7 +66,11 @@ defmodule ExOpenAITest do
                      {:%{}, [],
                       [
                         b: [{{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}],
-                        c: [{{:., [], [ExOpenAI.Components.Foo, :t]}, [], []}]
+                        c: [
+                          {{:., [],
+                            [{:__aliases__, [alias: false], [:ExOpenAI, :Components, :Foo]}, :t]},
+                           [], []}
+                        ]
                       ]}
                  ]
                }

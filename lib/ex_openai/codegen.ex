@@ -457,8 +457,11 @@ defmodule ExOpenAI.Codegen do
   end
 
   # nested component reference
-  def type_to_spec({:component, component}) when is_binary(component),
-    do: quote(do: unquote(string_to_component(component)).t())
+  def type_to_spec({:component, component}) when is_binary(component) do
+    # remote types to modules are represented with [:OpenAI, :Component, :X]
+    mod = string_to_component(component) |> Module.split() |> Enum.map(&String.to_atom/1)
+    {{:., [], [{:__aliases__, [alias: false], mod}, :t]}, [], []}
+  end
 
   # fallbacks
   def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
