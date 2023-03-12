@@ -270,6 +270,10 @@ end)
                       | unquote(val)
           end
         end)
+        |> case do
+          [] -> []
+          e -> [e]
+        end
 
       @doc """
       #{summary |> ExOpenAI.Codegen.fix_openai_links()}
