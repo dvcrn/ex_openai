@@ -13,22 +13,24 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 ## Features
 
 - Up-to-date and complete thanks to metaprogramming and code-generation
-- Implements *everything* the OpenAI has to offer
-- Strictly follows the official OpenAI APIs for argument/function naming 
+- Implements _everything_ the OpenAI has to offer
+- Strictly follows the official OpenAI APIs for argument/function naming
 - Handling of required arguments as function parameters and optional arguments as Keyword list in true Elixir-fashion
 - Auto-generated embedded function documentation
-- Auto-generated @spec definitions for dialyzer, for strict parameter typing 
+- Auto-generated @spec definitions for dialyzer, for strict parameter typing
 
 ## Installation
-Add ***:ex_openai*** as a dependency in your mix.exs file.
+
+Add **_:ex_openai_** as a dependency in your mix.exs file.
 
 ```elixir
 def deps do
   [
-    {:ex_openai, "~> 1.0"}
+    {:ex_openai, "~> 1.0.1"}
   ]
 end
 ```
+
 ## Supported endpoints (basically everything)
 
 - /answers
@@ -68,13 +70,10 @@ end
 
 <img src="images/functiondocs.png" width="600" />
 
-
-
 ## To Do's / What's not working yet
 
 - Typespecs for `oneOf` input types, currently represented as `any()`
 - Streams: Some APIs allow you to set `stream: true` to stream the responses through [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format). This is not supported (yet)
-
 
 ## Configuration
 
@@ -123,7 +122,7 @@ ExOpenAI.Models.list_models
        ],
        "root": "babbage"
      },
-	...
+  ...
 ```
 
 Required parameters are converted into function arguments, optional parameters into the opts keyword list:
@@ -186,12 +185,10 @@ IO.inspect(res.data)
 Run `mix update_openai_docs` and commit the new `docs.yaml` file
 
 ## License
+
 The package is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Attribution
 
-- Inspired by https://github.com/BlakeWilliams/Elixir-Slack 
+- Inspired by https://github.com/BlakeWilliams/Elixir-Slack
 - Client/config handling from https://github.com/mgallo/openai.ex
-
-
-
