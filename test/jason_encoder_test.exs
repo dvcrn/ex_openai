@@ -21,7 +21,12 @@ defmodule ExOpenAI.JasonEncoderTest do
            }) == "{\"content\":\"abc\",\"role\":\"assistant\"}"
   end
 
-  test "map of structs" do
+  test "normal map" do
+    assert encode_and_return(%{:foo => "bar", "bar" => :foo}) ==
+             "{\"foo\":\"bar\",\"bar\":\"foo\"}"
+  end
+
+  test "list of structs" do
     msgs = [
       %ExOpenAI.Components.ChatCompletionRequestMessage{
         role: :user,
