@@ -26,8 +26,8 @@ defmodule ExOpenAI.MixProject do
   def application do
     [
       mod: {ExOpenAI, []},
-      applications: [:httpoison, :json, :logger, :yaml_elixir],
-      extra_applications: [:logger]
+      applications: [:httpoison, :logger, :yaml_elixir],
+      extra_applications: [:logger, :jason]
     ]
   end
 
@@ -53,7 +53,7 @@ defmodule ExOpenAI.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:json, "~> 1.4"},
+      {:jason, "~> 1.4"},
       {:httpoison, "~> 1.8"},
       {:mock, "~> 0.3.6"},
       {:mix_test_watch, "~> 1.0"},

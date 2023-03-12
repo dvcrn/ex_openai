@@ -27,6 +27,31 @@ defmodule ExOpenAI do
 
     Supervisor.start_link(children, opts)
   end
+
+  # atoms should be strings
+  defimpl Jason.Encoder, for: [Atom] do
+    def encode(atom, opts) do
+      Jason.Encode.string(Atom.to_string(atom), opts)
+    end
+  end
+
+  # remove nil values from list
+  defimpl Jason.Encoder, for: [Any] do
+    def encode(struct, opts) when is_struct(struct) do
+      to_encode =
+        for {key, value} <- Map.to_list(struct),
+            value != nil,
+            key != :__struct__,
+            do: {key, value}
+
+      Jason.Encode.keyword(to_encode, opts)
+    end
+
+    # fallback
+    def encode(atom, opts) do
+      Jason.Encode.encode(atom, opts)
+    end
+  end
 end
 
 docs = ExOpenAI.Codegen.get_documentation()
@@ -71,6 +96,7 @@ end)
       @enforce_keys Map.keys(l)
     end
 
+    @derive Jason.Encoder
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
     @type t :: %__MODULE__{
@@ -297,9 +323,14 @@ end)
       """
       if deprecated, do: @deprecated("Deprecated by OpenAI")
 
-      @spec unquote(name)(unquote_splicing(spec)) :: {:ok, any()} | {:error, any()}
+      # fx without opts
+      @spec unquote(name)(unquote_splicing(spec)) ::
+              {:ok, unquote(response_spec)} | {:error, any()}
+
+      # fx with opts
       @spec unquote(name)(unquote_splicing(spec), unquote(optional_args)) ::
               {:ok, unquote(response_spec)} | {:error, any()}
+
       def unquote(name)(unquote_splicing(arg_names), opts \\ []) do
         # store binding so we can't access args of the function later
         binding = binding()

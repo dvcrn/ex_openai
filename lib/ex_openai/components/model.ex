@@ -29,6 +29,21 @@ defmodule ExOpenAI.Components.Model do
   ```
   """
 
+  @derive Jason.Encoder
+  defstruct [:created, :id, :object, :owned_by, :parent, :permission, :root]
+
+  def unpack_ast(partial_tree \\ %{}) do
+    with {:ok, type} <- Code.Typespec.fetch_types(__MODULE__) do
+      tp =
+        type
+        |> List.first()
+        |> Kernel.elem(1)
+        |> Code.Typespec.type_to_quoted()
+
+      Map.put(partial_tree, __MODULE__, tp)
+    end
+  end
+
   @type t :: %{
           created: integer,
           id: String.t(),
@@ -53,18 +68,4 @@ defmodule ExOpenAI.Components.Model do
             }
           ]
         }
-
-  defstruct [:created, :id, :object, :owned_by, :parent, :permission, :root]
-
-  def unpack_ast(partial_tree \\ %{}) do
-    with {:ok, type} <- Code.Typespec.fetch_types(__MODULE__) do
-      tp =
-        type
-        |> List.first()
-        |> Kernel.elem(1)
-        |> Code.Typespec.type_to_quoted()
-
-      Map.put(partial_tree, __MODULE__, tp)
-    end
-  end
 end
