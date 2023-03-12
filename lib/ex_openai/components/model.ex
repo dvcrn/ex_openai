@@ -29,7 +29,7 @@ defmodule ExOpenAI.Components.Model do
   ```
   """
 
-  @derive Jason.Encoder
+  use ExOpenAI.Jason
   defstruct [:created, :id, :object, :owned_by, :parent, :permission, :root]
 
   def unpack_ast(partial_tree \\ %{}) do
