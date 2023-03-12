@@ -77,6 +77,9 @@ defmodule ExOpenAI.Codegen do
     |> (&{:array, &1}).()
   end
 
+  def parse_type(%{"type" => "string", "enum" => enum_entries}),
+    do: {:enum, Enum.map(enum_entries, &String.to_atom/1)}
+
   def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
 
   def parse_type(%{"type" => type}), do: type
@@ -436,6 +439,10 @@ defmodule ExOpenAI.Codegen do
 
   def type_to_spec({:array, nested}) do
     quote(do: unquote([type_to_spec(nested)]))
+  end
+
+  def type_to_spec({:enum, l}) when is_list(l) do
+    Enum.reduce(l, &{:|, [], [&1, &2]})
   end
 
   def type_to_spec({:object, nested}) when is_map(nested) do

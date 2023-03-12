@@ -17,6 +17,11 @@ defmodule ExOpenAITest do
                {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
     end
 
+    test "enum" do
+      assert ExOpenAI.Codegen.type_to_spec({:enum, [:hello, :world, :again]}) ==
+               {:|, [], [:again, {:|, [], [:world, :hello]}]}
+    end
+
     test "array" do
       assert ExOpenAI.Codegen.type_to_spec("array") == {:list, [], []}
       assert ExOpenAI.Codegen.type_to_spec({:array, "number"}) == [{:float, [], []}]
@@ -390,6 +395,13 @@ defmodule ExOpenAITest do
                        "foo" => "integer"
                      }}
                 }}
+    end
+
+    test "enum" do
+      assert ExOpenAI.Codegen.parse_type(%{
+               "type" => "string",
+               "enum" => ["system", "user", "assistant"]
+             }) == {:enum, [:system, :user, :assistant]}
     end
 
     test "array" do
