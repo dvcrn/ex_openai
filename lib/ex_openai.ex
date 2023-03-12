@@ -65,21 +65,21 @@ end)
     Schema representing a #{Module.split(name) |> List.last()} within the OpenAI API
     """
 
-    @type t :: %unquote(name){
+    with l <- List.first(struct_fields),
+         is_empty? <- Enum.empty?(l),
+         false <- is_empty? do
+      @enforce_keys Map.keys(l)
+    end
+
+    defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
+
+    @type t :: %__MODULE__{
             unquote_splicing(
               struct_fields
               |> Enum.map(&Map.to_list(&1))
               |> Enum.reduce(&Kernel.++/2)
             )
           }
-
-    with l <- List.first(struct_fields),
-         is_empty? <- Enum.empty?(l),
-         false <- is_empty? do
-      # @enforce_keys Map.keys(l)
-    end
-
-    defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
     # Helper function to return the full AST representation of the type and all it's nested types
     # This is used so that all atoms in the map are getting allocated recursively.
