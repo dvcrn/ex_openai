@@ -2,7 +2,7 @@ defmodule ExOpenAI.Components.Model do
   @moduledoc """
   Replacement Component for Model API responses
   This module was not part of the api documentation and got probably forgotten, so it has been manually provided by this package
-  Rpresents API responses such as: 
+  Rpresents API responses such as:
   ```
   created: 1649880484,
   id: "text-davinci-insert-002",
@@ -32,16 +32,35 @@ defmodule ExOpenAI.Components.Model do
   use ExOpenAI.Jason
   defstruct [:created, :id, :object, :owned_by, :parent, :permission, :root]
 
-  def unpack_ast(partial_tree \\ %{}) do
-    with {:ok, type} <- Code.Typespec.fetch_types(__MODULE__) do
-      tp =
-        type
-        |> List.first()
-        |> Kernel.elem(1)
-        |> Code.Typespec.type_to_quoted()
+  @typespec quote(
+              do: %{
+                created: integer,
+                id: String.t(),
+                object: String.t(),
+                owned_by: String.t(),
+                parent: String.t(),
+                root: String.t(),
+                permission: [
+                  %{
+                    allow_create_engine: boolean(),
+                    allow_fine_tuning: boolean(),
+                    allow_logprobs: boolean(),
+                    allow_sampling: boolean(),
+                    allow_search_indices: boolean(),
+                    allow_view: boolean(),
+                    created: integer,
+                    group: String.t(),
+                    id: String.t(),
+                    is_blocking: boolean(),
+                    object: String.t(),
+                    organization: String.t()
+                  }
+                ]
+              }
+            )
 
-      Map.put(partial_tree, __MODULE__, tp)
-    end
+  def unpack_ast(partial_tree \\ %{}) do
+    Map.put(partial_tree, __MODULE__, @typespec)
   end
 
   @type t :: %{

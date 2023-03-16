@@ -91,6 +91,17 @@ end)
             )
           }
 
+    # Inlining the typespec here to have it available during PROD builds, as spec definitions will get stripped
+    @typespec quote(
+                do: %__MODULE__{
+                  unquote_splicing(
+                    struct_fields
+                    |> Enum.map(&Map.to_list(&1))
+                    |> Enum.reduce(&Kernel.++/2)
+                  )
+                }
+              )
+
     # Helper function to return the full AST representation of the type and all it's nested types
     # This is used so that all atoms in the map are getting allocated recursively.
     # Without this, we wouldn't be able to safely do String.to_existing_atom()
@@ -99,51 +110,41 @@ end)
       resolved_mods = Map.get(partial_tree, :resolved_mods, [])
       partial_tree = Map.put(partial_tree, :resolved_mods, resolved_mods)
 
-      case Code.Typespec.fetch_types(__MODULE__) do
-        {:ok, x} ->
-          case Enum.member?(resolved_mods, __MODULE__) do
-            true ->
-              # IO.puts("already resolved, skipping")
-              partial_tree
-
-            false ->
-              res =
-                x
-                |> List.first()
-                |> Kernel.elem(1)
-                |> Code.Typespec.type_to_quoted()
-                # walk through the AST and find all "ExOpenAI.Components"
-                # unpack their AST recursively and merge it all together into
-                # the accumulator
-                |> Macro.prewalk(partial_tree, fn args, acc ->
-                  r =
-                    with true <- is_atom(args),
-                         ats <- Atom.to_string(args),
-                         true <- String.contains?(ats, "ExOpenAI.Components") do
-                      tree =
-                        args.unpack_ast(%{
-                          resolved_mods: acc.resolved_mods ++ [__MODULE__]
-                        })
-
-                      {:ok, tree}
-                    end
-
-                  # merge back into accumulator, otherwise just return AST as is
-                  case r do
-                    {:ok, res} -> {args, Map.merge(acc, res)}
-                    _ -> {args, acc}
-                  end
-                end)
-
-              {ast, acc} = res
-
-              acc
-              |> Map.put(__MODULE__, ast)
-          end
-
-        e ->
-          IO.puts("could not fetch types: #{inspect(e)}")
+      case Enum.member?(resolved_mods, __MODULE__) do
+        true ->
+          # IO.puts("already resolved, skipping")
           partial_tree
+
+        false ->
+          res =
+            @typespec
+            # walk through the AST and find all "ExOpenAI.Components"
+            # unpack their AST recursively and merge it all together into
+            # the accumulator
+            |> Macro.prewalk(partial_tree, fn args, acc ->
+              r =
+                with true <- is_atom(args),
+                     ats <- Atom.to_string(args),
+                     true <- String.contains?(ats, "ExOpenAI.Components") do
+                  tree =
+                    args.unpack_ast(%{
+                      resolved_mods: acc.resolved_mods ++ [__MODULE__]
+                    })
+
+                  {:ok, tree}
+                end
+
+              # merge back into accumulator, otherwise just return AST as is
+              case r do
+                {:ok, res} -> {args, Map.merge(acc, res)}
+                _ -> {args, acc}
+              end
+            end)
+
+          {ast, acc} = res
+
+          acc
+          |> Map.put(__MODULE__, ast)
       end
     end
   end
