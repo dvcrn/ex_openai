@@ -186,6 +186,7 @@ Run `mix update_openai_docs` and commit the new `docs.yaml` file
 
 ## Some stuff built using this SDK (add yours with a PR!)
 
+- [Elixir ChatGPT](https://github.com/dvcrn/elixir-chatgpt)
 - https://fixmyjp.d.sh
 - https://github.com/dvcrn/gpt-slack-bot
 - https://david.coffee/mini-chatgpt-in-elixir-and-genserver/
