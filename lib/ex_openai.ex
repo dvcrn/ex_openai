@@ -332,30 +332,44 @@ end)
             ])
           )
 
-        case ExOpenAI.Client.api_call(method, url, body_params, request_content_type, opts) do
-          {:ok, res} ->
-            case unquote(response_type) do
-              {:component, comp} ->
-                # calling unpack_ast here so that all atoms of the given struct are
-                # getting allocated. otherwise later usage of keys_to_atom will fail
-                ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+        convert_response = fn response ->
+          case response do
+            {:ok, ref} when is_reference(ref) ->
+              {:ok, ref}
 
-                # todo: this is not recursive yet, so nested values won't be correctly identified as struct
-                # although the typespec is already recursive, so there can be cases where
-                # the typespec says a struct is nested, but there isn't
-                {:ok,
-                 struct(
-                   ExOpenAI.Codegen.string_to_component(comp),
-                   ExOpenAI.Codegen.keys_to_atoms(res)
-                 )}
+            {:ok, res} ->
+              case unquote(response_type) do
+                {:component, comp} ->
+                  # calling unpack_ast here so that all atoms of the given struct are
+                  # getting allocated. otherwise later usage of keys_to_atom will fail
+                  ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
 
-              _ ->
-                {:ok, res}
-            end
+                  # todo: this is not recursive yet, so nested values won't be correctly identified as struct
+                  # although the typespec is already recursive, so there can be cases where
+                  # the typespec says a struct is nested, but there isn't
+                  {:ok,
+                   struct(
+                     ExOpenAI.Codegen.string_to_component(comp),
+                     ExOpenAI.Codegen.keys_to_atoms(res)
+                   )}
 
-          e ->
-            e
+                _ ->
+                  {:ok, res}
+              end
+
+            e ->
+              e
+          end
         end
+
+        ExOpenAI.Client.api_call(
+          method,
+          url,
+          body_params,
+          request_content_type,
+          opts,
+          convert_response
+        )
       end
     end)
   end

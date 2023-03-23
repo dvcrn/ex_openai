@@ -18,6 +18,7 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 - Handling of required arguments as function parameters and optional arguments as Keyword list in true Elixir-fashion
 - Auto-generated embedded function documentation
 - Auto-generated @spec definitions for dialyzer, for strict parameter typing
+- Streaming data
 
 ## Installation
 
@@ -73,7 +74,7 @@ end
 ## To Do's / What's not working yet
 
 - Typespecs for `oneOf` input types, currently represented as `any()`
-- Streams: Some APIs allow you to set `stream: true` to stream the responses through [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format). This is not supported (yet)
+- Streams need some work and proper types
 
 ## Configuration
 
@@ -179,6 +180,57 @@ duck = File.read!("#{__DIR__}/testdata/duck.png")
 
 IO.inspect(res.data)
 ```
+
+### Streaming data (experimental)
+
+Streaming data is still experimental, YMMV!
+
+**At the time of writing, streaming support is not yet released to hex, so use the master of this repository**
+
+Create a new client for receiving the streamed data with `use ExOpenAI.StreamingClient`. You'll have to implement the `@behaviour ExOpenAI.StreamingClient`:
+
+```elixir
+defmodule MyStreamingClient do
+  use ExOpenAI.StreamingClient
+
+  @impl true
+  # callback on data
+  def handle_data(data, state) do
+    IO.puts("got data: #{inspect(data)}")
+    {:noreply, state}
+  end
+
+  @impl true
+  # callback on error
+  def handle_error(e, state) do
+    IO.puts("got error: #{inspect(e)}")
+    {:noreply, state}
+  end
+
+  @impl true
+  # callback on finish
+  def handle_finish(state) do
+    IO.puts("finished!!")
+    {:noreply, state}
+  end
+end
+```
+
+Then use it in requests that support streaming by setting `stream: true` and specifying `stream_to: pid`:
+
+```elixir
+{:ok, pid} = MyStreamingClient.start_link nil
+ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "hello world", stream: true, stream_to: pid
+```
+
+Your client will now receive the streamed chunks
+
+#### Caveats
+
+- Type information for streamed data is not correct yet. For Completions.create_completion it's fine, however Chat.create_chat_completion requests use a different struct with a `delta` field
+- `stream_to: ` is not part of the typespec yet as it's a custom field created by this SDK and not in OpenAI API docs
+- Return types for when setting `stream: true` is incorrect
+
 
 ## How to update once OpenAI changes something?
 

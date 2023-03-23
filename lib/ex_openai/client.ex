@@ -15,6 +15,9 @@ defmodule ExOpenAI.Client do
       {:ok, %HTTPoison.Response{body: {:ok, body}}} ->
         {:error, body}
 
+      {:ok, %HTTPoison.AsyncResponse{id: ref}} ->
+        {:ok, ref}
+
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, reason}
     end
@@ -45,15 +48,33 @@ defmodule ExOpenAI.Client do
 
   def request_options(), do: Config.http_options()
 
-  def api_get(url, request_options \\ []) do
+  def stream_options(request_options, convert_response) do
+    with {:ok, stream_val} <- Keyword.fetch(request_options, :stream),
+         {:ok, stream_to} when is_pid(stream_to) <- Keyword.fetch(request_options, :stream_to),
+         true <- stream_val do
+      {:ok, sse_client_pid} = ExOpenAI.SseClient.start_link(stream_to, convert_response)
+      [stream_to: sse_client_pid]
+    else
+      _ ->
+        []
+    end
+  end
+
+  def api_get(url, request_options \\ [], convert_response) do
     request_options = Keyword.merge(request_options(), request_options)
+    stream_options = stream_options(request_options, convert_response)
+
+    request_options =
+      Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
+      |> Map.to_list()
 
     url
     |> get(json_request_headers(), request_options)
     |> handle_response()
+    |> convert_response.()
   end
 
-  def api_post(url, params \\ [], request_options \\ []) do
+  def api_post(url, params \\ [], request_options \\ [], convert_response) do
     body =
       params
       |> Enum.into(%{})
@@ -61,18 +82,30 @@ defmodule ExOpenAI.Client do
       |> elem(1)
 
     request_options = Keyword.merge(request_options(), request_options)
+    stream_options = stream_options(request_options, convert_response)
+
+    request_options =
+      Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
+      |> Map.to_list()
 
     url
     |> post(body, json_request_headers(), request_options)
     |> handle_response()
+    |> convert_response.()
   end
 
-  def api_delete(url, request_options \\ []) do
+  def api_delete(url, request_options \\ [], convert_response) do
     request_options = Keyword.merge(request_options(), request_options)
+    stream_options = stream_options(request_options, convert_response)
+
+    request_options =
+      Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
+      |> Map.to_list()
 
     url
     |> delete(json_request_headers(), request_options)
     |> handle_response()
+    |> convert_response.()
   end
 
   defp multipart_param({name, content}) do
@@ -89,8 +122,13 @@ defmodule ExOpenAI.Client do
     end
   end
 
-  def api_multipart_post(url, params \\ [], request_options \\ []) do
+  def api_multipart_post(url, params \\ [], request_options \\ [], convert_response) do
     request_options = Keyword.merge(request_options(), request_options)
+    stream_options = stream_options(request_options, convert_response)
+
+    request_options =
+      Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
+      |> Map.to_list()
 
     multipart_body =
       {:multipart,
@@ -100,19 +138,20 @@ defmodule ExOpenAI.Client do
     url
     |> post(multipart_body, multipart_request_headers(), request_options)
     |> handle_response()
+    |> convert_response.()
   end
 
-  def api_call(:get, url, _params, _request_content_type, request_options),
-    do: api_get(url, request_options)
+  def api_call(:get, url, _params, _request_content_type, request_options, convert_response),
+    do: api_get(url, request_options, convert_response)
 
-  def api_call(:post, url, params, :"multipart/form-data", request_options),
-    do: api_multipart_post(url, params, request_options)
+  def api_call(:post, url, params, :"multipart/form-data", request_options, convert_response),
+    do: api_multipart_post(url, params, request_options, convert_response)
 
-  def api_call(:post, url, params, _request_content_type, request_options),
-    do: api_post(url, params, request_options)
+  def api_call(:post, url, params, _request_content_type, request_options, convert_response),
+    do: api_post(url, params, request_options, convert_response)
 
-  def api_call(:delete, url, _params, _request_content_type, request_options),
-    do: api_delete(url, request_options)
+  def api_call(:delete, url, _params, _request_content_type, request_options, convert_response),
+    do: api_delete(url, request_options, convert_response)
 
   def request_headers do
     [
