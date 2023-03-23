@@ -3,6 +3,63 @@ defmodule ExOpenAI.Codegen do
 
   # Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
 
+  defmodule AstUnpacker do
+    @moduledoc false
+
+    defmacro __using__(_opts) do
+      quote do
+        # Helper function to return the full AST representation of the type and all it's nested types
+        # This is used so that all atoms in the map are getting allocated recursively.
+        # Without this, we wouldn't be able to safely do String.to_existing_atom()
+        @doc false
+        def unpack_ast(partial_tree \\ %{}) do
+          resolved_mods = Map.get(partial_tree, :resolved_mods, [])
+          partial_tree = Map.put(partial_tree, :resolved_mods, resolved_mods)
+
+          case Enum.member?(resolved_mods, __MODULE__) do
+            true ->
+              # IO.puts("already resolved, skipping")
+              partial_tree
+
+            false ->
+              res =
+                @typespec
+                # walk through the AST and find all "ExOpenAI.Components"
+                # unpack their AST recursively and merge it all together into
+                # the accumulator
+                |> Macro.prewalk(partial_tree, fn args, acc ->
+                  r =
+                    with {:__aliases__, [alias: false], alias} <- args,
+                         mod <- Module.concat(alias),
+                         ats <- Atom.to_string(mod),
+                         true <- String.contains?(ats, "ExOpenAI.Components") do
+                      tree =
+                        mod.unpack_ast(%{
+                          resolved_mods: acc.resolved_mods ++ [__MODULE__]
+                        })
+
+                      {:ok, tree}
+                    end
+
+                  # merge back into accumulator, otherwise just return AST as is
+                  case r do
+                    {:ok, res} -> {args, Map.merge(acc, res)}
+                    _ -> {args, acc}
+                  end
+                end)
+
+              {ast, acc} = res
+
+              acc
+              |> Map.put(__MODULE__, ast)
+          end
+        end
+
+        # unpack_ast end
+      end
+    end
+  end
+
   @doc """
   Modules provided by this package that are not in the openapi docs provided by OpenAI
   So instead of generating those, we just provide a fallback

@@ -59,9 +59,7 @@ defmodule ExOpenAI.Components.Model do
               }
             )
 
-  def unpack_ast(partial_tree \\ %{}) do
-    Map.put(partial_tree, __MODULE__, @typespec)
-  end
+  use ExOpenAI.Codegen.AstUnpacker
 
   @type t :: %{
           created: integer,
