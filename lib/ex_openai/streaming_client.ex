@@ -97,7 +97,7 @@ defmodule ExOpenAI.StreamingClient do
   end
 
   def handle_info(%HTTPoison.Error{reason: reason}, state) do
-    Logger.debug("Error: #{inspect(reason)}")
+    Logger.error("Error: #{inspect(reason)}")
     GenServer.cast(state.stream_to, {:error, reason})
     {:noreply, state}
   end
