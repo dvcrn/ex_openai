@@ -52,7 +52,7 @@ defmodule ExOpenAI.Client do
     with {:ok, stream_val} <- Keyword.fetch(request_options, :stream),
          {:ok, stream_to} when is_pid(stream_to) <- Keyword.fetch(request_options, :stream_to),
          true <- stream_val do
-      {:ok, sse_client_pid} = ExOpenAI.SseClient.start_link(stream_to, convert_response)
+      {:ok, sse_client_pid} = ExOpenAI.StreamingClient.start_link(stream_to, convert_response)
       [stream_to: sse_client_pid]
     else
       _ ->
