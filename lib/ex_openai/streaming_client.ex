@@ -102,8 +102,13 @@ defmodule ExOpenAI.StreamingClient do
     {:noreply, state}
   end
 
-  def handle_info(%HTTPoison.AsyncStatus{} = status, state) do
+  def handle_info(%HTTPoison.AsyncStatus{code: code} = status, state) do
     Logger.debug("Connection status: #{inspect(status)}")
+
+    if code >= 400 do
+      GenServer.cast(state.stream_to, {:error, "received error status code: #{code}"})
+    end
+
     {:noreply, state}
   end
 
