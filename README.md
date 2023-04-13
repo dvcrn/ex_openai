@@ -27,7 +27,7 @@ Add **_:ex_openai_** as a dependency in your mix.exs file.
 ```elixir
 def deps do
   [
-    {:ex_openai, "~> 1.0.4"}
+    {:ex_openai, "~> 1.1.0"}
   ]
 end
 ```
@@ -185,7 +185,7 @@ IO.inspect(res.data)
 
 Streaming data is still experimental, YMMV!
 
-**At the time of writing, streaming support is not yet released to hex, so use the master of this repository**
+![streaming](https://github.com/dvcrn/chatgpt-ui/blob/main/demo.gif?raw=true)
 
 Create a new client for receiving the streamed data with `use ExOpenAI.StreamingClient`. You'll have to implement the `@behaviour ExOpenAI.StreamingClient`:
 
@@ -229,7 +229,7 @@ Your client will now receive the streamed chunks
 
 - Type information for streamed data is not correct yet. For Completions.create_completion it's fine, however Chat.create_chat_completion requests use a different struct with a `delta` field
 - `stream_to: ` is not part of the typespec yet as it's a custom field created by this SDK and not in OpenAI API docs
-- Return types for when setting `stream: true` is incorrect
+- Return types for when setting `stream: true` is incorrect, dialyzer may complain
 
 
 ## How to update once OpenAI changes something?
