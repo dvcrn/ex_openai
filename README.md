@@ -18,7 +18,7 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 - Handling of required arguments as function parameters and optional arguments as Keyword list in true Elixir-fashion
 - Auto-generated embedded function documentation
 - Auto-generated @spec definitions for dialyzer, for strict parameter typing
-- Streaming data
+- Support for streaming responses with SSE
 
 ## Installation
 
@@ -74,7 +74,7 @@ end
 ## To Do's / What's not working yet
 
 - Typespecs for `oneOf` input types, currently represented as `any()`
-- Streams need some work and proper types
+- Streams don't have complete typespecs yet
 
 ## Configuration
 
@@ -94,7 +94,7 @@ You can also pass `api_key` and `organization_key` directly by passing them into
 
 
 ```elixir
-	ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def")
+ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def")
 ```
 
 ## Usage
