@@ -23,27 +23,36 @@ defmodule ExOpenAI.Client do
     end
   end
 
-  def bearer(), do: {"Authorization", "Bearer #{Config.api_key()}"}
-
-  def add_organization_header(headers) do
-    if Config.org_key() do
-      [{"OpenAI-Organization", Config.org_key()} | headers]
+  @spec add_bearer_header(list(), String.t() | nil) :: list()
+  def add_bearer_header(headers, api_key \\ nil) do
+    if is_nil(api_key) do
+      [{"Authorization", "Bearer #{Config.api_key()}"} | headers]
     else
-      headers
+      [{"Authorization", "Bearer #{api_key}"} | headers]
     end
   end
 
-  def base_headers do
-    [bearer()]
-    |> add_organization_header()
+  @spec add_organization_header(list(), String.t() | nil) :: list()
+  def add_organization_header(headers, org_key \\ nil) do
+    if is_nil(org_key) do
+      if Config.org_key() do
+        [{"OpenAI-Organization", Config.org_key()} | headers]
+      else
+        headers
+      end
+    else
+      [{"OpenAI-Organization", org_key} | headers]
+    end
   end
 
-  def json_request_headers() do
-    [{"Content-type", "application/json"} | base_headers()]
+  @spec add_json_request_headers(list()) :: list()
+  def add_json_request_headers(headers) do
+    [{"Content-type", "application/json"} | headers]
   end
 
-  def multipart_request_headers() do
-    [{"Content-type", "multipart/form-data"} | base_headers()]
+  @spec add_multipart_request_headers(list()) :: list()
+  def add_multipart_request_headers(headers) do
+    [{"Content-type", "multipart/form-data"} | headers]
   end
 
   def request_options(), do: Config.http_options()
@@ -68,8 +77,16 @@ defmodule ExOpenAI.Client do
       Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
       |> Map.to_list()
 
+    request_options_map = Enum.into(request_options, %{})
+
+    headers =
+      []
+      |> add_json_request_headers()
+      |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
+      |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
+
     url
-    |> get(json_request_headers(), request_options)
+    |> get(headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -88,8 +105,16 @@ defmodule ExOpenAI.Client do
       Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
       |> Map.to_list()
 
+    request_options_map = Enum.into(request_options, %{})
+
+    headers =
+      []
+      |> add_json_request_headers()
+      |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
+      |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
+
     url
-    |> post(body, json_request_headers(), request_options)
+    |> post(body, headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -102,8 +127,16 @@ defmodule ExOpenAI.Client do
       Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
       |> Map.to_list()
 
+    request_options_map = Enum.into(request_options, %{})
+
+    headers =
+      []
+      |> add_json_request_headers()
+      |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
+      |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
+
     url
-    |> delete(json_request_headers(), request_options)
+    |> delete(headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -130,13 +163,21 @@ defmodule ExOpenAI.Client do
       Map.merge(Enum.into(request_options, %{}), Enum.into(stream_options, %{}))
       |> Map.to_list()
 
+    request_options_map = Enum.into(request_options, %{})
+
     multipart_body =
       {:multipart,
        params
        |> Enum.map(&multipart_param/1)}
 
+    headers =
+      []
+      |> add_multipart_request_headers()
+      |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
+      |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
+
     url
-    |> post(multipart_body, multipart_request_headers(), request_options)
+    |> post(multipart_body, headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -152,12 +193,4 @@ defmodule ExOpenAI.Client do
 
   def api_call(:delete, url, _params, _request_content_type, request_options, convert_response),
     do: api_delete(url, request_options, convert_response)
-
-  def request_headers do
-    [
-      bearer(),
-      {"Content-type", "application/json"}
-    ]
-    |> add_organization_header()
-  end
 end

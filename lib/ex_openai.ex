@@ -196,6 +196,7 @@ end)
           :delete ->
             Enum.filter(args, &(!Map.get(&1, :required?)))
         end
+        |> Kernel.++(ExOpenAI.Codegen.extra_opts_args())
 
       optional_args_docstring =
         Enum.map_join(merged_optional_args, "\n\n", fn i ->

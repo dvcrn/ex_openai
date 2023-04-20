@@ -66,6 +66,25 @@ defmodule ExOpenAI.Codegen do
   """
   def module_overwrites, do: [ExOpenAI.Components.Model]
 
+  def extra_opts_args do
+    [
+      %{
+        description:
+          "OpenAI API key to pass directly. If this is specified, it will override the `api_key` config value.",
+        example: "",
+        name: "openai_api_key",
+        type: "string"
+      },
+      %{
+        description:
+          "OpenAI API key to pass directly. If this is specified, it will override the `organization_key` config value.",
+        example: "",
+        name: "openai_organization_key",
+        type: "string"
+      }
+    ]
+  end
+
   @doc """
   Parses the given component type, returns a flattened representation of that type
 

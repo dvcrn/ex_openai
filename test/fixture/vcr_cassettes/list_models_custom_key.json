@@ -1,0 +1,40 @@
+[
+  {
+    "request": {
+      "body": "",
+      "headers": {
+        "Authorization": "Bearer abc",
+        "OpenAI-Organization": "def",
+        "Content-type": "application/json"
+      },
+      "method": "get",
+      "options": {
+        "recv_timeout": 50000
+      },
+      "request_body": "",
+      "url": "https://api.openai.com/v1/models?"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"error\": {\n    \"message\": \"Incorrect API key provided: abc. You can find your API key at https://platform.openai.com/account/api-keys.\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"invalid_api_key\"\n  }\n}\n",
+      "headers": {
+        "Date": "Thu, 20 Apr 2023 06:33:37 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "233",
+        "Connection": "keep-alive",
+        "www-authenticate": "Basic realm=\"OpenAI API\"",
+        "access-control-allow-origin": "*",
+        "openai-version": "2020-10-01",
+        "x-request-id": "210c44ab7c99729d735c2b5a8ddb52cf",
+        "openai-processing-ms": "8",
+        "strict-transport-security": "max-age=15724800; includeSubDomains",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "7bab5b556a07a80d-SYD",
+        "alt-svc": "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400"
+      },
+      "status_code": 401,
+      "type": "ok"
+    }
+  }
+]

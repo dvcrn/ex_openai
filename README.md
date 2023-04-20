@@ -90,6 +90,13 @@ config :ex_openai,
   http_options: [recv_timeout: 50_000]
 ```
 
+You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
+
+
+```elixir
+	ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def")
+```
+
 ## Usage
 
 Make sure to checkout the docs: https://hexdocs.pm/ex_openai
