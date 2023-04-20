@@ -66,6 +66,10 @@ defmodule ExOpenAI.Codegen do
   """
   def module_overwrites, do: [ExOpenAI.Components.Model]
 
+  @doc """
+  Extra opts that should be injected and are not part of the OpenAI docs
+  These are custom args that are unique to this package
+  """
   def extra_opts_args do
     [
       %{
@@ -83,6 +87,29 @@ defmodule ExOpenAI.Codegen do
         type: "string"
       }
     ]
+  end
+
+  @doc """
+  Inject `stream_to` args when the :stream field is available in the opts
+  :stream_to is custom to this package for streaming support, but only relevant if the
+  endpoint itself supports streaming of information
+  """
+  def add_stream_to_opts_args(opts) do
+    case Enum.any?(opts, fn el -> Map.get(el, :name, "stream") end) do
+      true ->
+        [
+          %{
+            description: "PID of the process to stream content to",
+            example: "",
+            name: "stream_to",
+            type: "pid"
+          }
+          | opts
+        ]
+
+      false ->
+        opts
+    end
   end
 
   @doc """
@@ -498,6 +525,7 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def type_to_spec("pid"), do: quote(do: pid())
   def type_to_spec("number"), do: quote(do: float())
   def type_to_spec("integer"), do: quote(do: integer())
   def type_to_spec("boolean"), do: quote(do: boolean())

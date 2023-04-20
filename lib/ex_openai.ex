@@ -196,6 +196,7 @@ end)
           :delete ->
             Enum.filter(args, &(!Map.get(&1, :required?)))
         end
+        |> ExOpenAI.Codegen.add_stream_to_opts_args()
         |> Kernel.++(ExOpenAI.Codegen.extra_opts_args())
 
       optional_args_docstring =

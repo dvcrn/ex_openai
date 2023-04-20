@@ -12,6 +12,8 @@ defmodule ExOpenAITest do
       assert ExOpenAI.Codegen.type_to_spec(:boolean) == {:boolean, [], []}
       assert ExOpenAI.Codegen.type_to_spec("bitstring") == {:bitstring, [], []}
       assert ExOpenAI.Codegen.type_to_spec(:bitstring) == {:bitstring, [], []}
+      assert ExOpenAI.Codegen.type_to_spec("pid") == {:pid, [], []}
+      assert ExOpenAI.Codegen.type_to_spec(:pid) == {:pid, [], []}
 
       assert ExOpenAI.Codegen.type_to_spec("string") ==
                {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
