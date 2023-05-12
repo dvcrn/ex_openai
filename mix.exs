@@ -54,8 +54,8 @@ defmodule ExOpenAI.MixProject do
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:httpoison, "~> 1.8"},
       {:mock, "~> 0.3.6", only: :test},
+      {:httpoison, "~> 2.1.0"},
       {:mix_test_watch, "~> 1.0"},
       {:ex_doc, ">= 0.19.2", only: :dev},
       {:exvcr, "~> 0.11", only: :test},
