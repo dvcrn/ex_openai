@@ -48,7 +48,7 @@ Add **_:ex_openai_** as a dependency in your mix.exs file.
 ```elixir
 def deps do
   [
-    {:ex_openai, "~> 1.1.1"}
+    {:ex_openai, "~> 1.1.2"}
   ]
 end
 ```
