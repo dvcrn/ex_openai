@@ -95,7 +95,9 @@ defmodule ExOpenAI.Client do
     body =
       params
       |> Enum.into(%{})
-      |> Jason.encode([])
+      # remove stream_to from params as PID messes with Jason
+      |> Map.delete(:stream_to)
+      |> Jason.encode()
       |> elem(1)
 
     request_options = Keyword.merge(request_options(), request_options)
