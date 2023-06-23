@@ -251,6 +251,17 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def parse_property(%{"$ref" => ref, "name" => name} = args) do
+    %{
+      name: name,
+      type: {:component, String.replace(ref, "#/components/schemas/", "")},
+      # optional
+      description: Map.get(args, "description", ""),
+      # optional
+      example: Map.get(args, "example", "")
+    }
+  end
+
   def parse_property(args) do
     IO.puts("Unknown property: #{inspect(args)}")
   end
@@ -287,7 +298,7 @@ defmodule ExOpenAI.Codegen do
   - "object" -> {:object, %{nestedobject...}}
   - "array" -> {:array, "string" | "integer" | etc}
   """
-  def parse_component_schema(%{"properties" => props, "required" => required}) do
+  def parse_component_schema(%{"properties" => props, "required" => required} = full_schema) do
     # turn required stuf into hashmap for quicker access and merge into actual properties
     required_map = required |> Enum.reduce(%{}, fn item, acc -> Map.put(acc, item, true) end)
 
@@ -299,10 +310,13 @@ defmodule ExOpenAI.Codegen do
         end
       end)
 
+    # IO.inspect(merged_props)
+
     required_props = merged_props |> Enum.filter(&(Map.get(&1, "required") == true))
     optional_props = merged_props |> Enum.filter(&(Map.get(&1, "required") == false))
 
     %{
+      description: Map.get(full_schema, "description", ""),
       required_props: parse_properties(required_props),
       optional_props: parse_properties(optional_props)
     }
@@ -310,6 +324,10 @@ defmodule ExOpenAI.Codegen do
 
   def parse_component_schema(%{"properties" => props}),
     do: parse_component_schema(%{"properties" => props, "required" => []})
+
+  # case for no props
+  def parse_component_schema(%{"description" => _} = args),
+    do: parse_component_schema(args |> Map.put("properties", %{}) |> Map.put("required", []))
 
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
   defp parse_get_schema(%{"type" => type, "example" => example}) do

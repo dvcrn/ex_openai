@@ -116,6 +116,7 @@ defmodule ExOpenAITest do
         |> List.first()
 
       expected = %{
+        description: "",
         optional_props: [
           %{
             description: "The contents of the message",
@@ -163,6 +164,7 @@ defmodule ExOpenAITest do
         |> List.first()
 
       expected = %{
+        description: "",
         optional_props: [
           %{
             description: "",
@@ -250,6 +252,7 @@ defmodule ExOpenAITest do
         |> List.first()
 
       expected = %{
+        description: "",
         optional_props: [
           %{
             description: "",
@@ -321,6 +324,7 @@ defmodule ExOpenAITest do
         |> List.first()
 
       expected = %{
+        description: "",
         optional_props: [
           %{
             description: "maskdesc",
@@ -343,6 +347,28 @@ defmodule ExOpenAITest do
             type: "string"
           }
         ]
+      }
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == expected
+    end
+
+    test "schema with missing properties" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+      type: object
+      description: The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.
+      # TODO type this as json schema
+      additionalProperties: true
+        ")
+        |> List.first()
+
+      expected = %{
+        optional_props: [],
+        required_props: [],
+        description:
+          "The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/gpt/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format."
       }
 
       parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
