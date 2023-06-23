@@ -55,28 +55,26 @@ end
 
 ## Supported endpoints (basically everything)
 
-- /answers
+- /audio/translations
+- /audio/transcriptions
 - /chat/completions
-- /classifications
 - /completions
 - /edits
 - /embeddings
-- /engines/{engine_id}
-- /engines
-- /files
 - /files/{file_id}/content
+- /files/{file_id}
+- /files
+- /models/{model}
 - /fine-tunes/{fine_tune_id}/events
 - /fine-tunes/{fine_tune_id}/cancel
 - /fine-tunes/{fine_tune_id}
 - /fine-tunes
-- /images/generations
 - /images/variations
+- /images/generations
 - /images/edits
 - /models
 - /moderations
-- /engines/{engine_id}/search
-- /audio/translations
-- /audio/transcriptions
+
 
 ### Editor features: Autocomplete, specs, docs
 
