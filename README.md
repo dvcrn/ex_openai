@@ -155,7 +155,7 @@ ExOpenAI.Models.list_models
 Required parameters are converted into function arguments, optional parameters into the opts keyword list:
 
 ```elixir
-ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "The sky is"
+ExOpenAI.Completions.create_completion "text-davinci-003", "The sky is"
 {:ok,
  %{
    choices: [
@@ -246,7 +246,7 @@ Then use it in requests that support streaming by setting `stream: true` and spe
 
 ```elixir
 {:ok, pid} = MyStreamingClient.start_link nil
-ExOpenAI.Completions.create_completion "text-davinci-003", prompt: "hello world", stream: true, stream_to: pid
+ExOpenAI.Completions.create_completion "text-davinci-003", "hello world", stream: true, stream_to: pid
 ```
 
 Your client will now receive the streamed chunks
