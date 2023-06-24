@@ -311,6 +311,7 @@ end)
         # for example /model/123?foo=bar
         query =
           Enum.filter(arguments, &Kernel.==(Map.get(&1, :in, ""), "query"))
+          |> Enum.filter(&(!is_nil(Keyword.get(all_passed_args, String.to_atom(&1.name)))))
           |> Enum.reduce(%{}, fn item, acc ->
             Map.put(acc, item.name, Keyword.get(all_passed_args, String.to_atom(item.name)))
           end)
