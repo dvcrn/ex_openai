@@ -56,7 +56,7 @@ defmodule ExOpenAI.MixProject do
       {:jason, "~> 1.4"},
       {:mock, "~> 0.3.6", only: :test},
       {:httpoison, "~> 2.1.0"},
-      {:mix_test_watch, "~> 1.0"},
+      {:mix_test_watch, "~> 1.0", only: :test},
       {:ex_doc, ">= 0.19.2", only: :dev},
       {:exvcr, "~> 0.11", only: :test},
       {:yaml_elixir, "~> 2.9"},
