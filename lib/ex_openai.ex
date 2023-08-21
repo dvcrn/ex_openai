@@ -174,6 +174,12 @@ end)
           s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
 
           s =
+            if i.name == "file",
+              do:
+                "#{s}(Pass in a file object created with something like File.open!, or a {filename, file object} tuple to preserve the filename information, eg `{\"filename.ext\", File.open!(\"/tmp/file.ext\")}`)",
+              else: s
+
+          s =
             if Map.get(i, :example, "") != "",
               do: "#{s}\n\n*Example*: `#{Map.get(i, :example)}`",
               else: s

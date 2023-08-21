@@ -143,18 +143,22 @@ defmodule ExOpenAI.Client do
     |> convert_response.()
   end
 
-  defp multipart_param({name, content}) do
+  defp multipart_param({name, {filename, content}}) do
     with strname <- Atom.to_string(name) do
       cond do
         # Strings can be valid bitstreams and bitstreams are valid binaries
         # Using String.valid? for comparison instead
         is_bitstring(content) and not String.valid?(content) ->
-          {"file", content, {"form-data", [name: strname, filename: "#{name}"]}, []}
+          {"file", content, {"form-data", [name: strname, filename: "#{filename}"]}, []}
 
         true ->
           {strname, content}
       end
     end
+  end
+
+  defp multipart_param({name, content}) do
+    multipart_param({name, {name, content}})
   end
 
   def api_multipart_post(url, params \\ [], request_options \\ [], convert_response) do

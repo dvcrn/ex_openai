@@ -10,13 +10,33 @@ defmodule ExOpenAITest do
       assert ExOpenAI.Codegen.type_to_spec(:integer) == {:integer, [], []}
       assert ExOpenAI.Codegen.type_to_spec("boolean") == {:boolean, [], []}
       assert ExOpenAI.Codegen.type_to_spec(:boolean) == {:boolean, [], []}
-      assert ExOpenAI.Codegen.type_to_spec("bitstring") == {:bitstring, [], []}
-      assert ExOpenAI.Codegen.type_to_spec(:bitstring) == {:bitstring, [], []}
+
       assert ExOpenAI.Codegen.type_to_spec("pid") == {:pid, [], []}
       assert ExOpenAI.Codegen.type_to_spec(:pid) == {:pid, [], []}
 
       assert ExOpenAI.Codegen.type_to_spec("string") ==
                {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
+
+      # bitstrings are either just bitstring, or a tuple of {filename, bitstring}
+      assert ExOpenAI.Codegen.type_to_spec("bitstring") == {
+               :|,
+               [],
+               [
+                 {:bitstring, [], []},
+                 {{{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []},
+                  {:bitstring, [], []}}
+               ]
+             }
+
+      assert ExOpenAI.Codegen.type_to_spec(:bitstring) == {
+               :|,
+               [],
+               [
+                 {:bitstring, [], []},
+                 {{{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []},
+                  {:bitstring, [], []}}
+               ]
+             }
     end
 
     test "enum" do

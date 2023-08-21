@@ -23,6 +23,8 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 	- [Usage](#usage)
 		- [Using ChatGPT APIs](#using-chatgpt-apis)
 		- [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
+			- [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
+		- [Usage of Audio related](#usage-of-audio-related)
 		- [Streaming data (experimental)](#streaming-data-experimental)
 			- [Caveats](#caveats)
 	- [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
@@ -206,6 +208,24 @@ duck = File.read!("#{__DIR__}/testdata/duck.png")
 
 IO.inspect(res.data)
 ```
+
+#### File endpoints that require filename information (Audio transcription)
+
+Some endpoints (like audio transcription) require the original filename so the API knows what the encoding of something is. You can pass a `{filename, bitstring}` tuple into anything that requires a file:
+
+```elixir
+audio = File.read!("/Users/david/Downloads/output.wav")
+output = ExOpenAI.Audio.create_transcription {"foobar.wav", audio}, "whisper-1"
+
+IO.inspect(output)
+
+{:ok,
+ %ExOpenAI.Components.CreateTranscriptionResponse{
+   text: "Hello, hello, hello, just a test."
+ }}
+```
+
+### Usage of Audio related
 
 ### Streaming data (experimental)
 

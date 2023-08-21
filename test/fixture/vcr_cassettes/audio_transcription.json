@@ -1,0 +1,42 @@
+[
+  {
+    "request": {
+      "body": "{:multipart, [{\"file\", <<82, 73, 70, 70, 198, 167, 3, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 68, 172, 0, 0, 136, 88, 1, 0, 2, 0, 16, 0, 76, 73, 83, 84, 26, 0, 0, 0, 73, ...>>, {\"form-data\", [name: \"file\", filename: \"audio.wav\"]}, []}, {\"model\", \"whisper-1\"}]}",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "multipart/form-data"
+      },
+      "method": "post",
+      "options": {
+        "recv_timeout": 50000
+      },
+      "request_body": "",
+      "url": "https://api.openai.com/v1/audio/transcriptions?"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\"text\":\"Hello, hello, hello, just a test.\"}",
+      "headers": {
+        "Date": "Mon, 21 Aug 2023 02:25:34 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "44",
+        "Connection": "keep-alive",
+        "openai-organization": "mercari-8",
+        "openai-processing-ms": "453",
+        "openai-version": "2020-10-01",
+        "strict-transport-security": "max-age=15724800; includeSubDomains",
+        "x-ratelimit-limit-requests": "50",
+        "x-ratelimit-remaining-requests": "49",
+        "x-ratelimit-reset-requests": "1.2s",
+        "x-request-id": "d97b4d3981e260a6618ca8ccc398c335",
+        "CF-Cache-Status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "7f9f6d058fe53e75-ADL",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]

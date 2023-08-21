@@ -28,4 +28,15 @@ defmodule ExOpenAI.ImageTest do
       assert List.first(res.data) |> Map.get(:b64_json) |> is_binary()
     end
   end
+
+  test "image variation with filename tuple" do
+    use_cassette "image_variation_tuple" do
+      duck = File.read!("#{__DIR__}/testdata/duck.png")
+
+      {:ok, res} = ExOpenAI.Images.create_image_variation({"duck.png", duck})
+
+      assert Enum.count(res.data) == 1
+      assert List.first(res.data) |> Map.get(:url) |> is_binary()
+    end
+  end
 end

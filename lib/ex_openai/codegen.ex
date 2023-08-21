@@ -548,7 +548,7 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("integer"), do: quote(do: integer())
   def type_to_spec("boolean"), do: quote(do: boolean())
   def type_to_spec("string"), do: quote(do: String.t())
-  def type_to_spec("bitstring"), do: quote(do: bitstring())
+  def type_to_spec("bitstring"), do: quote(do: bitstring() | {String.t(), bitstring()})
   # TODO: handle these types here better
   def type_to_spec("array"), do: quote(do: list())
   def type_to_spec("object"), do: quote(do: map())
