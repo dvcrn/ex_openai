@@ -58,7 +58,8 @@ defmodule ExOpenAI.MixProject do
       {:httpoison, "~> 2.1.0"},
       {:mix_test_watch, "~> 1.0", only: :test},
       {:ex_doc, ">= 0.19.2", only: :dev},
-      {:exvcr, "~> 0.11", only: :test},
+      {:exvcr, "~> 0.14.4", only: :test},
+      {:exjsx, "~> 4.0", only: :test},
       {:yaml_elixir, "~> 2.9"},
       {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false}

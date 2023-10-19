@@ -67,6 +67,16 @@ defmodule ExOpenAITest do
                 [], []}
     end
 
+    test "oneOf" do
+      assert ExOpenAI.Codegen.type_to_spec({:oneOf, [{:enum, [:auto]}, "integer"]}) ==
+               {:|, [], [{:integer, [], []}, :auto]}
+    end
+
+    test "anyOf" do
+      assert ExOpenAI.Codegen.type_to_spec({:anyOf, [{:enum, [:auto]}, "integer"]}) ==
+               {:|, [], [{:integer, [], []}, :auto]}
+    end
+
     test "complex nesting" do
       sp =
         {:object,
@@ -395,6 +405,80 @@ defmodule ExOpenAITest do
 
       assert parsed == expected
     end
+
+    test "schema with anyOf choice" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+      type: object
+      properties:
+        model:
+          description: ID of the model to use. You can use the `text-davinci-edit-001` or `code-davinci-edit-001` model with this endpoint.
+          type: string
+          example: \"text-davinci-edit-001\"
+          anyOf:
+            - type: string
+            - type: string
+              enum: [\"text-davinci-edit-001\",\"code-davinci-edit-001\"]
+        ")
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == %{
+               description: "",
+               optional_props: [
+                 %{
+                   name: "model",
+                   type:
+                     {:anyOf,
+                      [
+                        "string",
+                        {:enum, [:"text-davinci-edit-001", :"code-davinci-edit-001"]}
+                      ]},
+                   description:
+                     "ID of the model to use. You can use the `text-davinci-edit-001` or `code-davinci-edit-001` model with this endpoint."
+                 }
+               ],
+               required_props: []
+             }
+    end
+
+    test "schema with oneOf choice" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+      type: object
+      properties:
+        model:
+          description: ID of the model to use. You can use the `text-davinci-edit-001` or `code-davinci-edit-001` model with this endpoint.
+          type: string
+          example: \"text-davinci-edit-001\"
+          oneOf:
+            - type: string
+            - type: string
+              enum: [\"text-davinci-edit-001\",\"code-davinci-edit-001\"]
+        ")
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == %{
+               description: "",
+               optional_props: [
+                 %{
+                   name: "model",
+                   type:
+                     {:oneOf,
+                      [
+                        "string",
+                        {:enum, [:"text-davinci-edit-001", :"code-davinci-edit-001"]}
+                      ]},
+                   description:
+                     "ID of the model to use. You can use the `text-davinci-edit-001` or `code-davinci-edit-001` model with this endpoint."
+                 }
+               ],
+               required_props: []
+             }
+    end
   end
 
   describe "parse_type" do
@@ -455,6 +539,18 @@ defmodule ExOpenAITest do
                "type" => "string",
                "enum" => ["system", "user", "assistant"]
              }) == {:enum, [:system, :user, :assistant]}
+    end
+
+    test "oneOf" do
+      assert ExOpenAI.Codegen.parse_type(%{
+               "default" => "auto",
+               "description" =>
+                 "The number of epochs to train the model for. An epoch refers to one\nfull cycle through the training dataset.\n",
+               "oneOf" => [
+                 %{"enum" => ["auto"], "type" => "string"},
+                 %{"maximum" => 50, "minimum" => 1, "type" => "integer"}
+               ]
+             }) == {:oneOf, [{:enum, [:auto]}, "integer"]}
     end
 
     test "array" do
@@ -555,7 +651,7 @@ defmodule ExOpenAITest do
         ],
         deprecated?: true,
         endpoint: "/foo/${engine_id}",
-        group: "somegroup",
+        group: "foo",
         method: :get,
         name: "mypath",
         response_type: :string,
@@ -604,7 +700,7 @@ defmodule ExOpenAITest do
         ],
         deprecated?: true,
         endpoint: "/foo/${engine_id}",
-        group: "engines",
+        group: "foo",
         method: :get,
         name: "retrieve_engine",
         response_type: {:component, "Engine"},
@@ -672,7 +768,7 @@ defmodule ExOpenAITest do
         ],
         deprecated?: true,
         endpoint: "/foo/${engine_id}",
-        group: "engines",
+        group: "foo",
         method: :post,
         name: "retrieve_engine",
         response_type: :number,
@@ -736,7 +832,7 @@ defmodule ExOpenAITest do
         arguments: [],
         deprecated?: false,
         endpoint: "/foo/${engine_id}",
-        group: "images",
+        group: "foo",
         method: :post,
         name: "create_image_edit",
         response_type: {:component, "ImagesResponse"},

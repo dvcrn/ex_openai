@@ -90,6 +90,27 @@ defmodule ExOpenAI.Codegen do
   end
 
   @doc """
+  Extracts the group name from a given URL.
+
+  ## Examples
+
+      iex> UrlExtractor.extract_group_from_url("/fine-tunes/{fine_tune_id}")
+      "FineTunes"
+
+      iex> UrlExtractor.extract_group_from_url("/files/{file_id}/content")
+      "Files"
+
+  """
+  defp extract_group_from_url(url) do
+    String.split(url, "/")
+    |> Enum.at(1)
+    |> String.split("-")
+    |> Enum.map(&String.capitalize/1)
+    |> Enum.join()
+    |> Macro.underscore()
+  end
+
+  @doc """
   Inject `stream_to` args when the :stream field is available in the opts
   :stream_to is custom to this package for streaming support, but only relevant if the
   endpoint itself supports streaming of information
@@ -144,6 +165,12 @@ defmodule ExOpenAI.Codegen do
           %{"type" => _type} ->
             {name, parse_type(obj)}
 
+          %{"oneOf" => _oneOf} ->
+            {name, parse_type(obj)}
+
+          %{"anyOf" => _oneOf} ->
+            {name, parse_type(obj)}
+
           %{"$ref" => ref} ->
             {name, {:component, String.replace(ref, "#/components/schemas/", "")}}
         end
@@ -151,6 +178,24 @@ defmodule ExOpenAI.Codegen do
       |> Enum.into(%{})
 
     {:object, parsed_obj}
+  end
+
+  def parse_type(%{"$ref" => ref} = args) do
+    {:component, String.replace(ref, "#/components/schemas/", "")}
+  end
+
+  def parse_type(%{"anyOf" => anyOf}) do
+    {:anyOf,
+     Enum.map(anyOf, fn x ->
+       parse_type(x)
+     end)}
+  end
+
+  def parse_type(%{"oneOf" => oneOf}) do
+    {:oneOf,
+     Enum.map(oneOf, fn x ->
+       parse_type(x)
+     end)}
   end
 
   def parse_type(%{
@@ -197,7 +242,33 @@ defmodule ExOpenAI.Codegen do
     parse_property(Map.put(args, "type", parse_type(args)))
   end
 
-  def parse_property(%{"name" => name, "description" => desc, "oneOf" => oneOf}) do
+  def parse_property(%{"anyOf" => anyOf} = args) do
+    # parse anyOf array into a list of schemas
+    #    "anyOf" => [
+    #      %{
+    #        "default" => "",
+    #        "example" => "I want to kill them.",
+    #        "type" => "string"
+    #      },
+    #      %{
+    #        "items" => %{
+    #          "default" => "",
+    #          "example" => "I want to kill them.",
+    #          "type" => "string"
+    #        },
+    #        "type" => "array"
+    #      }
+    #    ],
+
+    %{
+      name: Map.get(args, "name"),
+      description: Map.get(args, "description"),
+      required: Map.get(args, "required", false),
+      type: {:anyOf, Enum.map(anyOf, fn x -> ExOpenAI.Codegen.parse_type(x) end)}
+    }
+  end
+
+  def parse_property(%{"oneOf" => oneOf} = args) do
     # parse oneOf array into a list of schemas
     #    "oneOf" => [
     #      %{
@@ -216,13 +287,35 @@ defmodule ExOpenAI.Codegen do
     #    ],
 
     %{
+      name: Map.get(args, "name"),
+      description: Map.get(args, "description"),
+      required: Map.get(args, "required", false),
+      type: {:oneOf, Enum.map(oneOf, fn x -> ExOpenAI.Codegen.parse_type(x) end)}
+    }
+  end
+
+  # %{
+  #   "default" => "auto",
+  #   "description" =>
+  #     "The number of epochs to train the model for. An epoch refers to one\nfull cycle through the training dataset.\n",
+  #   "oneOf" => [
+  #     %{"enum" => ["auto"], "type" => "string"},
+  #     %{"maximum" => 50, "minimum" => 1, "type" => "integer"}
+  #   ]
+  # }
+
+  def parse_property(%{
+        "name" => name,
+        "description" => desc,
+        "anyOf" => anyOf,
+        "required" => required
+      }) do
+    %{
       name: name,
       description: desc,
-      type: "oneOf",
-      oneOf:
-        Enum.map(oneOf, fn item ->
-          Map.put(parse_get_schema(item), :default, item["default"])
-        end)
+      type: "anyOf",
+      required: required,
+      oneOf: Enum.map(anyOf, fn x -> ExOpenAI.Codegen.parse_type(x) end)
     }
   end
 
@@ -309,8 +402,6 @@ defmodule ExOpenAI.Codegen do
           is_required -> Map.put(val, "required", is_required) |> Map.put("name", key)
         end
       end)
-
-    # IO.inspect(merged_props)
 
     required_props = merged_props |> Enum.filter(&(Map.get(&1, "required") == true))
     optional_props = merged_props |> Enum.filter(&(Map.get(&1, "required") == false))
@@ -451,7 +542,7 @@ defmodule ExOpenAI.Codegen do
               "summary" => summary,
               "requestBody" => body,
               "responses" => responses,
-              "x-oaiMeta" => %{"group" => group}
+              "x-oaiMeta" => _meta
             } = args
         },
         component_mapping
@@ -464,7 +555,7 @@ defmodule ExOpenAI.Codegen do
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
       method: :post,
       request_body: parse_request_body(body, component_mapping),
-      group: group,
+      group: extract_group_from_url(path),
       response_type: extract_response_type(responses)
     }
   end
@@ -501,7 +592,7 @@ defmodule ExOpenAI.Codegen do
               "operationId" => id,
               "summary" => summary,
               "responses" => responses,
-              "x-oaiMeta" => %{"group" => group}
+              "x-oaiMeta" => _meta
             } = args
         },
         _component_mapping
@@ -513,7 +604,7 @@ defmodule ExOpenAI.Codegen do
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
       method: :get,
-      group: group,
+      group: extract_group_from_url(path),
       response_type: extract_response_type(responses)
     }
   end
@@ -534,13 +625,17 @@ defmodule ExOpenAI.Codegen do
         Map.put(acc, name, parse_component_schema(value))
       end)
 
-    %{
+    res = %{
       components: component_mapping,
       functions:
         yml["paths"]
-        |> Enum.map(fn {path, field_data} -> parse_path(path, field_data, component_mapping) end)
+        |> Enum.map(fn {path, field_data} ->
+          parse_path(path, field_data, component_mapping)
+        end)
         |> Enum.filter(&(!is_nil(&1)))
     }
+
+    res
   end
 
   def type_to_spec("pid"), do: quote(do: pid())
@@ -553,6 +648,19 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("array"), do: quote(do: list())
   def type_to_spec("object"), do: quote(do: map())
   def type_to_spec("oneOf"), do: quote(do: any())
+  def type_to_spec("anyOf"), do: quote(do: any())
+
+  def type_to_spec({:anyOf, nested}) do
+    nested
+    |> Enum.map(&type_to_spec/1)
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
+  def type_to_spec({:oneOf, nested}) do
+    nested
+    |> Enum.map(&type_to_spec/1)
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
 
   def type_to_spec({:array, {:object, nested_object}}) do
     parsed = type_to_spec({:object, nested_object})
