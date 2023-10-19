@@ -429,6 +429,7 @@ defmodule ExOpenAITest do
                optional_props: [
                  %{
                    name: "model",
+                   required: false,
                    type:
                      {:anyOf,
                       [
@@ -466,6 +467,7 @@ defmodule ExOpenAITest do
                optional_props: [
                  %{
                    name: "model",
+                   required: false,
                    type:
                      {:oneOf,
                       [

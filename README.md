@@ -99,7 +99,6 @@ end
 
 ## To Do's / What's not working yet
 
-- Typespecs for `oneOf` input types, currently represented as `any()`
 - Streams don't have complete typespecs yet
 
 ## Configuration
