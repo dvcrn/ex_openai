@@ -29,6 +29,7 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 			- [Caveats](#caveats)
 	- [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
 	- [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
+	- [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
 	- [License](#license)
 	- [Attribution](#attribution)
 
@@ -56,26 +57,30 @@ end
 ```
 
 ## Supported endpoints (basically everything)
+- "/audio/transcriptions"
+- "/audio/translations"
+- "/chat/completions"
+- "/completions"
+- "/edits"
+- "/embeddings"
+- "/files"
+- "/files/{file_id}"
+- "/files/{file_id}/content"
+- "/fine-tunes"
+- "/fine-tunes/{fine_tune_id}"
+- "/fine-tunes/{fine_tune_id}/cancel"
+- "/fine-tunes/{fine_tune_id}/events"
+- "/fine_tuning/jobs"
+- "/fine_tuning/jobs/{fine_tuning_job_id}"
+- "/fine_tuning/jobs/{fine_tuning_job_id}/cancel"
+- "/fine_tuning/jobs/{fine_tuning_job_id}/events"
+- "/images/edits"
+- "/images/generations"
+- "/images/variations"
+- "/models"
+- "/models/{model}"
+- "/moderations"
 
-- /audio/translations
-- /audio/transcriptions
-- /chat/completions
-- /completions
-- /edits
-- /embeddings
-- /files/{file_id}/content
-- /files/{file_id}
-- /files
-- /models/{model}
-- /fine-tunes/{fine_tune_id}/events
-- /fine-tunes/{fine_tune_id}/cancel
-- /fine-tunes/{fine_tune_id}
-- /fine-tunes
-- /images/variations
-- /images/generations
-- /images/edits
-- /models
-- /moderations
 
 
 ### Editor features: Autocomplete, specs, docs
@@ -287,6 +292,87 @@ Run `mix update_openai_docs` and commit the new `docs.yaml` file
 - https://fixmyjp.d.sh
 - https://github.com/dvcrn/gpt-slack-bot
 - https://david.coffee/mini-chatgpt-in-elixir-and-genserver/
+
+## How auto-generation works / how can I extend this?
+
+The code got a little complicated but here is the basic gist of it: `codegen.ex` is responsible for parsing the docs.yml file into Elixir types. This is then used in `ex_openai.ex` to generate modules.
+
+The endpoint path is used to generate the group name, for example "/completions" turns into `ExOpenAI.Completions.*`.
+
+1. "parse_component_schema" parses the entire docs.yml file and spits out a bunch of "property" structs that look like this:
+
+```yml
+    ChatCompletionRequestMessage:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: ["system", "user", "assistant", "function"]
+          description: The role of the messages author. One of `system`, `user`, `assistant`, or `function`.
+        content:
+          type: string
+          nullable: true
+          description: The contents of the message. `content` is required for all messages, and may be null for assistant messages with function calls.
+        name:
+          type: string
+          description: The name of the author of this message. `name` is required if role is `function`, and it should be the name of the function whose response is in the `content`. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
+      required:
+        - role
+        - content
+```
+
+... turns into:
+
+```elixir
+%{
+  description: "",
+  required_props: [
+    %{
+      name: "content",
+      type: "string",
+      description: "The contents of the message. `content` is required for all messages, and may be null for assistant messages with function calls.",
+      example: ""
+    },
+    %{
+      name: "role",
+      type: {:enum, [:system, :user, :assistant, :function]},
+      description: "The role of the messages author. One of `system`, `user`, `assistant`, or `function`.",
+      example: ""
+    }
+  ],
+  optional_props: [
+    %{
+      name: "name",
+      type: "string",
+      description: "The name of the author of this message. `name` is required if role is `function`, and it should be the name of the function whose response is in the `content`. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.",
+      example: ""
+    }
+  ]
+}
+```
+
+Important point here: "type" is parsed into an elixir representation that we can workw ith later. For example `string` -> `string`, or `enum: ["system", "user", "assistant", "function"]` -> `{:enum, [:system, :user, :assistant, :function]}`
+
+2. Type gets constructed by calling `parse_type` from the property parsing. This is a Elixir function with different pattern matching, for example, enum looks like this:
+
+```elixir
+  def parse_type(%{"type" => "string", "enum" => enum_entries}),
+    do: {:enum, Enum.map(enum_entries, &String.to_atom/1)}
+```
+
+3. The final type is converted into a Elixir typespec by calling `type_to_spec`:
+
+```elixir
+  def type_to_spec({:enum, l}) when is_list(l) do
+    Enum.reduce(l, &{:|, [], [&1, &2]})
+  end
+
+  def type_to_spec("number"), do: quote(do: float())
+  def type_to_spec("integer"), do: quote(do: integer())
+  def type_to_spec("boolean"), do: quote(do: boolean())
+```
+
+4. All of this is put together in `ex_openai.ex` to generate the actual modules, the spec is then used to generate documentation.
 
 ## License
 
