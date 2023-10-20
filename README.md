@@ -11,28 +11,27 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 **Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you notice anything acting up.
 
 - [Elixir SDK for OpenAI APIs](#elixir-sdk-for-openai-apis)
-	- [Features](#features)
-	- [Installation](#installation)
-	- [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
-		- [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
-			- [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
-			- [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
-			- [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
-	- [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
-	- [Configuration](#configuration)
-	- [Usage](#usage)
-		- [Using ChatGPT APIs](#using-chatgpt-apis)
-		- [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
-			- [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
-		- [Usage of Audio related](#usage-of-audio-related)
-		- [Streaming data (experimental)](#streaming-data-experimental)
-			- [Caveats](#caveats)
-	- [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
-	- [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
-	- [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
-	- [License](#license)
-	- [Attribution](#attribution)
-
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
+    - [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
+      - [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
+      - [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
+      - [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
+  - [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
+  - [Configuration](#configuration)
+  - [Usage](#usage)
+    - [Using ChatGPT APIs](#using-chatgpt-apis)
+    - [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
+      - [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
+    - [Usage of Audio related](#usage-of-audio-related)
+    - [Streaming data (experimental)](#streaming-data-experimental)
+      - [Caveats](#caveats)
+  - [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
+  - [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
+  - [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
+  - [License](#license)
+  - [Attribution](#attribution)
 
 ## Features
 
@@ -51,12 +50,13 @@ Add **_:ex_openai_** as a dependency in your mix.exs file.
 ```elixir
 def deps do
   [
-    {:ex_openai, "~> 1.3.0"}
+    {:ex_openai, "~> 1.3.1"}
   ]
 end
 ```
 
 ## Supported endpoints (basically everything)
+
 - "/audio/transcriptions"
 - "/audio/translations"
 - "/chat/completions"
@@ -80,8 +80,6 @@ end
 - "/models"
 - "/models/{model}"
 - "/moderations"
-
-
 
 ### Editor features: Autocomplete, specs, docs
 
@@ -116,7 +114,6 @@ config :ex_openai,
 ```
 
 You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
-
 
 ```elixir
 ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def")
@@ -280,7 +277,6 @@ Your client will now receive the streamed chunks
 - Type information for streamed data is not correct yet. For Completions.create_completion it's fine, however Chat.create_chat_completion requests use a different struct with a `delta` field
 - Return types for when setting `stream: true` is incorrect, dialyzer may complain
 
-
 ## How to update once OpenAI changes something?
 
 Run `mix update_openai_docs` and commit the new `docs.yaml` file
@@ -301,23 +297,23 @@ The endpoint path is used to generate the group name, for example "/completions"
 1. "parse_component_schema" parses the entire docs.yml file and spits out a bunch of "property" structs that look like this:
 
 ```yml
-    ChatCompletionRequestMessage:
-      type: object
-      properties:
-        role:
-          type: string
-          enum: ["system", "user", "assistant", "function"]
-          description: The role of the messages author. One of `system`, `user`, `assistant`, or `function`.
-        content:
-          type: string
-          nullable: true
-          description: The contents of the message. `content` is required for all messages, and may be null for assistant messages with function calls.
-        name:
-          type: string
-          description: The name of the author of this message. `name` is required if role is `function`, and it should be the name of the function whose response is in the `content`. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
-      required:
-        - role
-        - content
+ChatCompletionRequestMessage:
+  type: object
+  properties:
+    role:
+      type: string
+      enum: ["system", "user", "assistant", "function"]
+      description: The role of the messages author. One of `system`, `user`, `assistant`, or `function`.
+    content:
+      type: string
+      nullable: true
+      description: The contents of the message. `content` is required for all messages, and may be null for assistant messages with function calls.
+    name:
+      type: string
+      description: The name of the author of this message. `name` is required if role is `function`, and it should be the name of the function whose response is in the `content`. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
+  required:
+    - role
+    - content
 ```
 
 ... turns into:
