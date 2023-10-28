@@ -97,6 +97,8 @@ defmodule ExOpenAI.Client do
       |> Enum.into(%{})
       # remove stream_to from params as PID messes with Jason
       |> Map.delete(:stream_to)
+      |> Map.delete(:openai_organization_key)
+      |> Map.delete(:openai_api_key)
       |> Jason.encode()
       |> elem(1)
 
