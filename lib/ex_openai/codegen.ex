@@ -180,7 +180,7 @@ defmodule ExOpenAI.Codegen do
     {:object, parsed_obj}
   end
 
-  def parse_type(%{"$ref" => ref} = args) do
+  def parse_type(%{"$ref" => ref} = _args) do
     {:component, String.replace(ref, "#/components/schemas/", "")}
   end
 
@@ -415,7 +415,7 @@ defmodule ExOpenAI.Codegen do
   end
 
   # Handling for when the component isn't a full component by it's own, but instead embeds other components
-  def parse_component_schema(%{"oneOf" => oneOf} = args) do
+  def parse_component_schema(%{"oneOf" => _oneOf} = args) do
     %{
       kind: :oneOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
@@ -423,7 +423,6 @@ defmodule ExOpenAI.Codegen do
       required_props: [],
       optional_props: []
     }
-    |> IO.inspect()
   end
 
   def parse_component_schema(%{"properties" => props}),
