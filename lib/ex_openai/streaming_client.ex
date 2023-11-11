@@ -44,15 +44,28 @@ defmodule ExOpenAI.StreamingClient do
     {:ok, %{stream_to: pid, convert_response_fx: fx}}
   end
 
+  @doc """
+  Forwards the given response back to the receiver
+  If receiver is a PID, will use GenServer.cast to send
+  If receiver is a function, will call the function directly
+  """
+  def forward_response(pid, data) when is_pid(pid) do
+    GenServer.cast(pid, data)
+  end
+
+  def forward_response(callback_fx, data) when is_function(callback_fx) do
+    callback_fx.(data)
+  end
+
   def handle_chunk(
         chunk,
-        %{stream_to: pid, convert_response_fx: convert_fx}
+        %{stream_to: pid_or_fx, convert_response_fx: convert_fx}
       ) do
     chunk
     |> String.trim()
     |> case do
       "[DONE]" ->
-        GenServer.cast(pid, :finish)
+        forward_response(pid_or_fx, :finish)
 
       etc ->
         json =
@@ -61,10 +74,10 @@ defmodule ExOpenAI.StreamingClient do
 
         case json do
           {:ok, res} ->
-            GenServer.cast(pid, {:data, res})
+            forward_response(pid_or_fx, {:data, res})
 
           {:error, err} ->
-            GenServer.cast(pid, {:error, err})
+            forward_response(pid_or_fx, {:error, err})
         end
     end
   end
@@ -98,7 +111,8 @@ defmodule ExOpenAI.StreamingClient do
 
   def handle_info(%HTTPoison.Error{reason: reason}, state) do
     Logger.error("Error: #{inspect(reason)}")
-    GenServer.cast(state.stream_to, {:error, reason})
+
+    forward_response(state.stream_to, {:error, reason})
     {:noreply, state}
   end
 
@@ -106,8 +120,16 @@ defmodule ExOpenAI.StreamingClient do
     Logger.debug("Connection status: #{inspect(status)}")
 
     if code >= 400 do
-      GenServer.cast(state.stream_to, {:error, "received error status code: #{code}"})
+      forward_response(state.stream_to, {:error, "received error status code: #{code}"})
     end
+
+    {:noreply, state}
+  end
+
+  def handle_info(%HTTPoison.AsyncEnd{}, state) do
+    # :finish is already sent when data ends
+    # TODO: may need a separate event for this
+    # forward_response(state.stream_to, :finish)
 
     {:noreply, state}
   end

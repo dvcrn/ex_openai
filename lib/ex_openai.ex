@@ -360,6 +360,8 @@ end)
             ])
           )
 
+        # function to convert the response back into a struct
+        # passed into the client to get applied onto the response
         convert_response = fn response ->
           case response do
             {:ok, ref} when is_reference(ref) ->

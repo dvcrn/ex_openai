@@ -203,9 +203,9 @@ ExOpenAI.Completions.create_completion "text-davinci-003", "The sky is"
 
 ```elixir
 msgs = [
-  %ChatCompletionRequestUserMessage{role: :user, content: "Hello!"},
-  %ChatCompletionRequestAssistantMessage{role: :assistant, content: "What's up?"},
-  %ChatCompletionRequestUserMessage{role: :user, content: "What ist the color of the sky?"}
+  %ExOpenAI.Components.ChatCompletionRequestUserMessage{role: :user, content: "Hello!"},
+  %ExOpenAI.Components.ChatCompletionRequestAssistantMessage{role: :assistant, content: "What's up?"},
+  %ExOpenAI.Components.ChatCompletionRequestUserMessage{role: :user, content: "What ist the color of the sky?"}
 ]
 
 {:ok, res} =
@@ -246,13 +246,30 @@ IO.inspect(output)
 
 ### Usage of Audio related
 
-### Streaming data (experimental)
-
-Streaming data is still experimental, YMMV!
+### Streaming data
 
 ![streaming](https://github.com/dvcrn/chatgpt-ui/blob/main/demo.gif?raw=true)
 
-Create a new client for receiving the streamed data with `use ExOpenAI.StreamingClient`. You'll have to implement the `@behaviour ExOpenAI.StreamingClient`:
+You have 2 options to stream data, either by specifying a **callback function** or by specifying a **separate PID**
+
+#### Streaming with a callback function
+
+Pass a callback function to `stream_to` when invoking a call and set `stream:` to `true`:
+
+```elixir
+callback = fn
+	:finish -> IO.puts "Done"
+	{:data, data} -> IO.puts "Data: #{inspect(data)}"
+	{:error, err} -> IO.puts "Error: #{inspect(err)}"
+end
+
+ExOpenAI.Completions.create_completion "text-davinci-003", "hello world", stream: true, stream_to: callback
+```
+
+
+#### Streaming with a separate process
+
+Create a new client for receiving the streamed data with `use ExOpenAI.StreamingClient`. You'll have to implement the `@behaviour ExOpenAI.StreamingClient` which defines 3 callback functions:
 
 ```elixir
 defmodule MyStreamingClient do
