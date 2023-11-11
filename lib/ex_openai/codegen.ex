@@ -120,10 +120,10 @@ defmodule ExOpenAI.Codegen do
       true ->
         [
           %{
-            description: "PID of the process to stream content to",
+            description: "PID or function of where to stream content to",
             example: "",
             name: "stream_to",
-            type: "pid"
+            type: {:anyOf, ["pid", "function"]}
           }
           | opts
         ]
@@ -656,6 +656,7 @@ defmodule ExOpenAI.Codegen do
   end
 
   def type_to_spec("pid"), do: quote(do: pid())
+  def type_to_spec("function"), do: quote(do: fun())
   def type_to_spec("number"), do: quote(do: float())
   def type_to_spec("integer"), do: quote(do: integer())
   def type_to_spec("boolean"), do: quote(do: boolean())

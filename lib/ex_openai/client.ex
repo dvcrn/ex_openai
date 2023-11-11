@@ -59,13 +59,15 @@ defmodule ExOpenAI.Client do
 
   def stream_options(request_options, convert_response) do
     with {:ok, stream_val} <- Keyword.fetch(request_options, :stream),
-         {:ok, stream_to} when is_pid(stream_to) <- Keyword.fetch(request_options, :stream_to),
+         {:ok, stream_to} when is_pid(stream_to) or is_function(stream_to) <-
+           Keyword.fetch(request_options, :stream_to),
          true <- stream_val do
+      # spawn a new StreamingClient and tell it to forward data to `stream_to`
       {:ok, sse_client_pid} = ExOpenAI.StreamingClient.start_link(stream_to, convert_response)
       [stream_to: sse_client_pid]
     else
       _ ->
-        []
+        [stream_to: nil]
     end
   end
 
