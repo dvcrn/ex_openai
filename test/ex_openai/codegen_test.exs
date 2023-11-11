@@ -147,6 +147,7 @@ defmodule ExOpenAITest do
 
       expected = %{
         description: "",
+        kind: :component,
         optional_props: [
           %{
             description: "The contents of the message",
@@ -168,6 +169,30 @@ defmodule ExOpenAITest do
       parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
 
       assert parsed == expected
+    end
+
+    test "parse schema with oneOf refs" do
+      test_schema =
+        ~S"
+      oneOf:
+        - $ref: \"#/components/schemas/ChatCompletionRequestMessageContentPartText\"
+        - $ref: \"#/components/schemas/ChatCompletionRequestMessageContentPartImage\"
+      x-oaiExpandable: true
+    "
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == %{
+               kind: :oneOf,
+               components: [
+                 component: "ChatCompletionRequestMessageContentPartText",
+                 component: "ChatCompletionRequestMessageContentPartImage"
+               ],
+               optional_props: [],
+               required_props: []
+             }
     end
 
     test "nested component schema" do
@@ -195,6 +220,7 @@ defmodule ExOpenAITest do
 
       expected = %{
         description: "",
+        kind: :component,
         optional_props: [
           %{
             description: "",
@@ -283,6 +309,7 @@ defmodule ExOpenAITest do
 
       expected = %{
         description: "",
+        kind: :component,
         optional_props: [
           %{
             description: "",
@@ -355,6 +382,7 @@ defmodule ExOpenAITest do
 
       expected = %{
         description: "",
+        kind: :component,
         optional_props: [
           %{
             description: "maskdesc",
@@ -395,6 +423,7 @@ defmodule ExOpenAITest do
         |> List.first()
 
       expected = %{
+        kind: :component,
         optional_props: [],
         required_props: [],
         description:
@@ -426,6 +455,7 @@ defmodule ExOpenAITest do
 
       assert parsed == %{
                description: "",
+               kind: :component,
                optional_props: [
                  %{
                    name: "model",
@@ -464,6 +494,7 @@ defmodule ExOpenAITest do
 
       assert parsed == %{
                description: "",
+               kind: :component,
                optional_props: [
                  %{
                    name: "model",

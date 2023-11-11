@@ -71,8 +71,8 @@ end)
   defmodule name do
     use ExOpenAI.Jason
 
-    @moduledoc """
-    Schema representing a #{Module.split(name) |> List.last()} within the OpenAI API
+    docstring_head = """
+     Schema representing a #{Module.split(name) |> List.last()} within the OpenAI API
     """
 
     with l <- List.first(struct_fields),
@@ -83,24 +83,40 @@ end)
 
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
-    @type t :: %__MODULE__{
-            unquote_splicing(
-              struct_fields
-              |> Enum.map(&Map.to_list(&1))
-              |> Enum.reduce(&Kernel.++/2)
-            )
-          }
+    case component.kind do
+      :component ->
+        @type t :: %__MODULE__{
+                unquote_splicing(
+                  struct_fields
+                  |> Enum.map(&Map.to_list(&1))
+                  |> Enum.reduce(&Kernel.++/2)
+                )
+              }
 
-    # Inlining the typespec here to have it available during PROD builds, as spec definitions will get stripped
-    @typespec quote(
-                do: %__MODULE__{
-                  unquote_splicing(
-                    struct_fields
-                    |> Enum.map(&Map.to_list(&1))
-                    |> Enum.reduce(&Kernel.++/2)
+        # Inlining the typespec here to have it available during PROD builds, as spec definitions will get stripped
+        @typespec quote(
+                    do: %__MODULE__{
+                      unquote_splicing(
+                        struct_fields
+                        |> Enum.map(&Map.to_list(&1))
+                        |> Enum.reduce(&Kernel.++/2)
+                      )
+                    }
                   )
-                }
-              )
+
+        @moduledoc "#{docstring_head}
+				"
+
+      :oneOf ->
+        @type t :: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.components}))
+        @typespec quote(
+                    do: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.components}))
+                  )
+
+        @moduledoc "#{docstring_head}
+
+				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
+    end
 
     use ExOpenAI.Codegen.AstUnpacker
   end
