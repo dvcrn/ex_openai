@@ -57,29 +57,47 @@ end
 
 ## Supported endpoints (basically everything)
 
+- "/assistants/{assistant_id}"
+- "/assistants/{assistant_id}/files/{file_id}"
+- "/assistants"
+- "/assistants/{assistant_id}/files"
+- "/audio/speech"
 - "/audio/transcriptions"
 - "/audio/translations"
 - "/chat/completions"
 - "/completions"
 - "/edits"
 - "/embeddings"
-- "/files"
 - "/files/{file_id}"
 - "/files/{file_id}/content"
-- "/fine-tunes"
+- "/files"
 - "/fine-tunes/{fine_tune_id}"
-- "/fine-tunes/{fine_tune_id}/cancel"
 - "/fine-tunes/{fine_tune_id}/events"
+- "/fine-tunes/{fine_tune_id}/cancel"
+- "/fine-tunes"
 - "/fine_tuning/jobs"
 - "/fine_tuning/jobs/{fine_tuning_job_id}"
-- "/fine_tuning/jobs/{fine_tuning_job_id}/cancel"
 - "/fine_tuning/jobs/{fine_tuning_job_id}/events"
+- "/fine_tuning/jobs/{fine_tuning_job_id}/cancel"
 - "/images/edits"
 - "/images/generations"
 - "/images/variations"
-- "/models"
 - "/models/{model}"
+- "/models"
 - "/moderations"
+- "/threads/{thread_id}/messages/{message_id}/files"
+- "/threads/{thread_id}"
+- "/threads"
+- "/threads/{thread_id}/runs/{run_id}/steps"
+- "/threads/{thread_id}/messages/{message_id}/files/{file_id}"
+- "/threads/{thread_id}/runs/{run_id}/submit_tool_outputs"
+- "/threads/{thread_id}/runs/{run_id}/steps/{step_id}"
+- "/threads/{thread_id}/messages"
+- "/threads/runs"
+- "/threads/{thread_id}/messages/{message_id}"
+- "/threads/{thread_id}/runs/{run_id}/cancel"
+- "/threads/{thread_id}/runs"
+- "/threads/{thread_id}/runs/{run_id}"
 
 ### Editor features: Autocomplete, specs, docs
 
@@ -185,9 +203,9 @@ ExOpenAI.Completions.create_completion "text-davinci-003", "The sky is"
 
 ```elixir
 msgs = [
-  %{role: "user", content: "Hello!"},
-  %{role: "assistant", content: "What's up?"},
-  %{role: "user", content: "What ist the color of the sky?"}
+  %ChatCompletionRequestUserMessage{role: :user, content: "Hello!"},
+  %ChatCompletionRequestAssistantMessage{role: :assistant, content: "What's up?"},
+  %ChatCompletionRequestUserMessage{role: :user, content: "What ist the color of the sky?"}
 ]
 
 {:ok, res} =
@@ -321,6 +339,7 @@ ChatCompletionRequestMessage:
 ```elixir
 %{
   description: "",
+	kind: :component, # can be 'oneOf' or 'component'
   required_props: [
     %{
       name: "content",
@@ -346,7 +365,7 @@ ChatCompletionRequestMessage:
 }
 ```
 
-Important point here: "type" is parsed into an elixir representation that we can workw ith later. For example `string` -> `string`, or `enum: ["system", "user", "assistant", "function"]` -> `{:enum, [:system, :user, :assistant, :function]}`
+Important point here: "type" is parsed into an elixir representation that we can work with later. For example `string` -> `string`, or `enum: ["system", "user", "assistant", "function"]` -> `{:enum, [:system, :user, :assistant, :function]}`
 
 2. Type gets constructed by calling `parse_type` from the property parsing. This is a Elixir function with different pattern matching, for example, enum looks like this:
 

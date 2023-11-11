@@ -83,6 +83,9 @@ end)
 
     defstruct(struct_fields |> Enum.map(&Map.keys(&1)) |> List.flatten())
 
+    # components can either be 'full' components, so they have properties
+    # or 'oneOf' components which link to other components but don't have properties themselves
+    # for typespec, normal ones should just have full typespecs, but oneOf just a Comp1 | Comp2 | Comp3 spec
     case component.kind do
       :component ->
         @type t :: %__MODULE__{
