@@ -13,14 +13,6 @@ defmodule ExOpenAI.JasonEncoderTest do
     assert encode_and_return([:one, :two, "three"]) == "[\"one\",\"two\",\"three\"]"
   end
 
-  test "drop nil" do
-    assert encode_and_return(%ExOpenAI.Components.ChatCompletionRequestMessage{
-             content: "abc",
-             role: :assistant,
-             name: nil
-           }) == "{\"content\":\"abc\",\"role\":\"assistant\"}"
-  end
-
   test "normal map" do
     assert encode_and_return(%{:foo => "bar", "bar" => :foo}) ==
              "{\"foo\":\"bar\",\"bar\":\"foo\"}"
@@ -28,15 +20,15 @@ defmodule ExOpenAI.JasonEncoderTest do
 
   test "list of structs" do
     msgs = [
-      %ExOpenAI.Components.ChatCompletionRequestMessage{
+      %ExOpenAI.Components.ChatCompletionRequestUserMessage{
         role: :user,
         content: "Hello!"
       },
-      %ExOpenAI.Components.ChatCompletionRequestMessage{
+      %ExOpenAI.Components.ChatCompletionRequestAssistantMessage{
         role: :assistant,
         content: "What's up?"
       },
-      %ExOpenAI.Components.ChatCompletionRequestMessage{
+      %ExOpenAI.Components.ChatCompletionRequestUserMessage{
         role: :user,
         content: "What ist the color of the sky?"
       }

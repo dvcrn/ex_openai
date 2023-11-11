@@ -10,15 +10,15 @@ defmodule ExOpenAI.ChatTest do
   test "chat completion" do
     use_cassette "chat_basic_completion" do
       msgs = [
-        %ExOpenAI.Components.ChatCompletionRequestMessage{
+        %ExOpenAI.Components.ChatCompletionRequestUserMessage{
           role: :user,
           content: "Hello!"
         },
-        %ExOpenAI.Components.ChatCompletionRequestMessage{
+        %ExOpenAI.Components.ChatCompletionRequestAssistantMessage{
           role: :assistant,
           content: "What's up?"
         },
-        %ExOpenAI.Components.ChatCompletionRequestMessage{
+        %ExOpenAI.Components.ChatCompletionRequestUserMessage{
           role: :user,
           content: "What ist the color of the sky?"
         }

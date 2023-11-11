@@ -180,7 +180,7 @@ defmodule ExOpenAI.Codegen do
     {:object, parsed_obj}
   end
 
-  def parse_type(%{"$ref" => ref} = args) do
+  def parse_type(%{"$ref" => ref} = _args) do
     {:component, String.replace(ref, "#/components/schemas/", "")}
   end
 
@@ -408,8 +408,20 @@ defmodule ExOpenAI.Codegen do
 
     %{
       description: Map.get(full_schema, "description", ""),
+      kind: :component,
       required_props: parse_properties(required_props),
       optional_props: parse_properties(optional_props)
+    }
+  end
+
+  # Handling for when the component isn't a full component by it's own, but instead embeds other components
+  def parse_component_schema(%{"oneOf" => _oneOf} = args) do
+    %{
+      kind: :oneOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: parse_property(args) |> Map.get(:type) |> elem(1),
+      required_props: [],
+      optional_props: []
     }
   end
 
@@ -446,6 +458,11 @@ defmodule ExOpenAI.Codegen do
       # ref: ref,
       request_schema: Map.get(component_mapping, ref)
     }
+  end
+
+  # case for when required is not set
+  defp parse_request_body(%{"content" => _content} = args, component_mapping) do
+    parse_request_body(Map.put(args, "required", false), component_mapping)
   end
 
   defp parse_request_body(nil, _) do
