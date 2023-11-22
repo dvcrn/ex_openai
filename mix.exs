@@ -4,7 +4,7 @@ defmodule ExOpenAI.MixProject do
   def project do
     [
       app: :ex_openai,
-      version: "1.3.1",
+      version: "1.4.0",
       elixir: "~> 1.11",
       description: description(),
       start_permanent: Mix.env() == :prod,
