@@ -129,6 +129,10 @@ config :ex_openai,
   organization_key: System.get_env("OPENAI_ORGANIZATION_KEY"),
   # optional, passed to [HTTPoison.Request](https://hexdocs.pm/httpoison/HTTPoison.Request.html) options
   http_options: [recv_timeout: 50_000]
+  # optional, default request headers. The following header is required for Assistant endpoints, which are in beta as of December 2023.
+  http_headers: [
+    {"OpenAI-Beta", "assistants=v1"}
+  ]
 ```
 
 You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
