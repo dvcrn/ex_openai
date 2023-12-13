@@ -11,7 +11,8 @@ defmodule ExOpenAI.Config do
   @config_keys [
     :api_key,
     :organization_key,
-    :http_options
+    :http_options,
+    :http_headers
   ]
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -35,6 +36,8 @@ defmodule ExOpenAI.Config do
 
   # HTTP Options
   def http_options, do: get_config_value(:http_options, [])
+
+  def http_headers, do: get_config_value(:http_headers, [])
 
   defp get_config_value(key, default \\ nil) do
     value =

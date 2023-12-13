@@ -57,6 +57,8 @@ defmodule ExOpenAI.Client do
 
   def request_options(), do: Config.http_options()
 
+  def default_headers(), do: Config.http_headers()
+
   def stream_options(request_options, convert_response) do
     with {:ok, stream_val} <- Keyword.fetch(request_options, :stream),
          {:ok, stream_to} when is_pid(stream_to) or is_function(stream_to) <-
@@ -82,7 +84,7 @@ defmodule ExOpenAI.Client do
     request_options_map = Enum.into(request_options, %{})
 
     headers =
-      []
+      default_headers()
       |> add_json_request_headers()
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
@@ -114,7 +116,7 @@ defmodule ExOpenAI.Client do
     request_options_map = Enum.into(request_options, %{})
 
     headers =
-      []
+      default_headers()
       |> add_json_request_headers()
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
@@ -136,7 +138,7 @@ defmodule ExOpenAI.Client do
     request_options_map = Enum.into(request_options, %{})
 
     headers =
-      []
+      default_headers()
       |> add_json_request_headers()
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
@@ -181,7 +183,7 @@ defmodule ExOpenAI.Client do
        |> Enum.map(&multipart_param/1)}
 
     headers =
-      []
+      default_headers()
       |> add_multipart_request_headers()
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
