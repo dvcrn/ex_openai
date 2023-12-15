@@ -50,7 +50,7 @@ Add **_:ex_openai_** as a dependency in your mix.exs file.
 ```elixir
 def deps do
   [
-    {:ex_openai, "~> 1.3.1"}
+    {:ex_openai, "~> 1.4"}
   ]
 end
 ```
@@ -128,7 +128,7 @@ config :ex_openai,
   # find it at https://platform.openai.com/account/api-keys
   organization_key: System.get_env("OPENAI_ORGANIZATION_KEY"),
   # optional, passed to [HTTPoison.Request](https://hexdocs.pm/httpoison/HTTPoison.Request.html) options
-  http_options: [recv_timeout: 50_000]
+  http_options: [recv_timeout: 50_000],
   # optional, default request headers. The following header is required for Assistant endpoints, which are in beta as of December 2023.
   http_headers: [
     {"OpenAI-Beta", "assistants=v1"}
