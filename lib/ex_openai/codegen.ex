@@ -642,13 +642,22 @@ defmodule ExOpenAI.Codegen do
         Map.put(acc, name, parse_component_schema(value))
       end)
 
+    # iterate through all URL pathes and generate a normalized map
+    # eg path = /assistants/{xxx}
+    # field_data = %{"get" => xxx, "post" => yyy}
     res = %{
       components: component_mapping,
       functions:
         yml["paths"]
         |> Enum.map(fn {path, field_data} ->
-          parse_path(path, field_data, component_mapping)
+          # iterate through get/post/delete/put options and call parse_path for each
+          # parse_path will then generate the normalized map for the method
+          Enum.map(field_data, fn {verb, args} ->
+            # parse path expects a %{"get" => xxx} as arg
+            parse_path(path, %{verb => args}, component_mapping)
+          end)
         end)
+        |> List.flatten()
         |> Enum.filter(&(!is_nil(&1)))
     }
 
