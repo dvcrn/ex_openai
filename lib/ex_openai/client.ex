@@ -5,7 +5,14 @@ defmodule ExOpenAI.Client do
 
   def process_url(url), do: Config.api_url() <> url
 
-  def process_response_body(body), do: Jason.decode(body)
+	def process_response_body(body) do
+    # audio/speech endpoint returns binary data, so leave as is
+    if is_binary(body) do
+      {:ok, body}
+    else
+      Jason.decode(body)
+    end
+  end
 
   def handle_response(httpoison_response) do
     case httpoison_response do
