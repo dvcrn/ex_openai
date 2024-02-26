@@ -129,6 +129,9 @@ config :ex_openai,
   api_key: System.get_env("OPENAI_API_KEY"),
   # find it at https://platform.openai.com/account/api-keys
   organization_key: System.get_env("OPENAI_ORGANIZATION_KEY"),
+	# optional, other clients allow overriding via the OPENAI_API_URL/OPENAI_API_BASE environment variable,
+	# if unset the the default is https://api.openai.com/v1
+  base_url: System.get_env("OPENAI_API_URL"),
   # optional, passed to [HTTPoison.Request](https://hexdocs.pm/httpoison/HTTPoison.Request.html) options
   http_options: [recv_timeout: 50_000],
   # optional, default request headers. The following header is required for Assistant endpoints, which are in beta as of December 2023.
