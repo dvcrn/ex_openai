@@ -32,7 +32,9 @@ defmodule ExOpenAI.Config do
   def org_key, do: get_config_value(:organization_key)
 
   # API Url
-  def api_url, do: @openai_url
+	# Other clients allow overriding via the OPENAI_API_URL/OPENAI_API_BASE environment variable,
+	# but this is set via config with the default being https://api.openai.com/v1
+  def api_url, do: get_config_value(:base_url, @openai_url)
 
   # HTTP Options
   def http_options, do: get_config_value(:http_options, [])

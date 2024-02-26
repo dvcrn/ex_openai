@@ -16,6 +16,13 @@ defmodule ExOpenAI.ConfigTest do
     assert Config.http_options() == [recv_timeout: 30_000]
   end
 
+	test "base_url/1 should return value or default" do
+		assert Config.api_url() == "https://api.openai.com/v1"
+
+		Application.put_env(@application, :base_url, "https://example.com/foobar")
+		assert Config.api_url() == "https://example.com/foobar"
+	end
+
   defp reset_env() do
     Application.get_all_env(@application)
     |> Keyword.keys()
