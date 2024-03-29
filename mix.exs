@@ -26,8 +26,7 @@ defmodule ExOpenAI.MixProject do
   def application do
     [
       mod: {ExOpenAI, []},
-      applications: [:httpoison, :logger, :yaml_elixir],
-      extra_applications: [:logger, :jason]
+      extra_applications: [:httpoison, :jason, :logger, :yaml_elixir]
     ]
   end
 
