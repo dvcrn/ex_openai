@@ -1,9 +1,11 @@
 defmodule ExOpenAI.Client do
   @moduledoc false
+  @behaviour ExOpenAI.ClientBehaviour
+  # use HTTPoison.Base
   alias ExOpenAI.Config
-  use HTTPoison.Base
 
   def process_url(url), do: Config.api_url() <> url
+  def http_client(), do: Config.http_client()
 
   def process_response_body(body) do
     case Jason.decode(body) do
@@ -96,7 +98,7 @@ defmodule ExOpenAI.Client do
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
     url
-    |> get(headers, request_options)
+    |> http_client().get(headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -128,7 +130,7 @@ defmodule ExOpenAI.Client do
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
     url
-    |> post(body, headers, request_options)
+    |> http_client().post(body, headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -150,7 +152,7 @@ defmodule ExOpenAI.Client do
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
     url
-    |> delete(headers, request_options)
+    |> http_client().delete(headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
@@ -195,7 +197,7 @@ defmodule ExOpenAI.Client do
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
     url
-    |> post(multipart_body, headers, request_options)
+    |> http_client().post(multipart_body, headers, request_options)
     |> handle_response()
     |> convert_response.()
   end
