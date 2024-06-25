@@ -294,6 +294,15 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def parse_property(%{"allOf" => allOf} = args) do
+    %{
+      name: Map.get(args, "name"),
+      description: Map.get(args, "description"),
+      required: Map.get(args, "required", false),
+      type: {:allOf, Enum.map(allOf, fn x -> ExOpenAI.Codegen.parse_type(x) end)}
+    }
+  end
+
   # %{
   #   "default" => "auto",
   #   "description" =>
@@ -425,6 +434,16 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def parse_component_schema(%{"allOf" => _allOf} = args) do
+    %{
+      kind: :allOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: parse_property(args) |> Map.get(:type) |> elem(1),
+      required_props: [],
+      optional_props: []
+    }
+  end
+
   def parse_component_schema(%{"properties" => props}),
     do: parse_component_schema(%{"properties" => props, "required" => []})
 
@@ -448,7 +467,7 @@ defmodule ExOpenAI.Codegen do
 
     # resolve the object ref to the actual component to get the schema
     ref =
-      rest["schema"]["$ref"]
+      (rest["schema"]["$ref"] || "")
       |> String.replace_prefix("#/components/schemas/", "")
 
     %{
@@ -484,17 +503,26 @@ defmodule ExOpenAI.Codegen do
   end
 
   defp extract_response_type(%{"200" => %{"content" => content}}) do
-    case content
-         # [["application/json", %{}]]
-         |> Map.to_list()
-         # ["application/json", %{}]
-         |> List.first()
-         # %{}
-         |> Kernel.elem(1)
-         |> Map.get("schema") do
+    content
+    # [["application/json", %{}]]
+    |> Map.to_list()
+    # ["application/json", %{}]
+    |> List.first()
+    # %{}
+    |> Kernel.elem(1)
+    |> Map.get("schema")
+    |> case do
       # no ref
-      %{"type" => type} -> String.to_atom(type)
-      %{"$ref" => ref} -> {:component, String.replace(ref, "#/components/schemas/", "")}
+      %{"type" => type} ->
+        String.to_atom(type)
+
+      %{"$ref" => ref} ->
+        {:component, String.replace(ref, "#/components/schemas/", "")}
+
+      %{"oneOf" => list} ->
+        Enum.map(list, fn %{"$ref" => ref} ->
+          {:component, String.replace(ref, "#/components/schemas/", "")}
+        end)
     end
   end
 
@@ -675,6 +703,7 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("array"), do: quote(do: list())
   def type_to_spec("object"), do: quote(do: map())
   def type_to_spec("oneOf"), do: quote(do: any())
+  def type_to_spec("allOf"), do: quote(do: any())
   def type_to_spec("anyOf"), do: quote(do: any())
 
   def type_to_spec({:anyOf, nested}) do

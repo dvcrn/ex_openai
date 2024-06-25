@@ -119,6 +119,16 @@ end)
         @moduledoc "#{docstring_head}
 
 				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
+
+      :allOf ->
+        @type t :: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.components}))
+        @typespec quote(
+                    do: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.components}))
+                  )
+
+        @moduledoc "#{docstring_head}
+
+				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
     end
 
     use ExOpenAI.Codegen.AstUnpacker
@@ -175,7 +185,7 @@ end)
           # POST methods have body arguments on top of positional URL ones
           :post ->
             args ++
-              if(is_nil(fx.request_body),
+              if(is_nil(get_in(fx, [:request_body, :request_schema, :required_props])),
                 do: [],
                 else: fx.request_body.request_schema.required_props
               )
@@ -210,7 +220,7 @@ end)
         case method do
           :post ->
             Enum.filter(args, &(!Map.get(&1, :required?))) ++
-              if(is_nil(fx.request_body),
+              if(is_nil(get_in(fx, [:request_body, :request_schema, :optional_props])),
                 do: [],
                 else: fx.request_body.request_schema.optional_props
               )
