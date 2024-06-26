@@ -137,7 +137,10 @@ config :ex_openai,
   # optional, default request headers. The following header is required for Assistant endpoints, which are in beta as of December 2023.
   http_headers: [
     {"OpenAI-Beta", "assistants=v1"}
-  ]
+  ],
+  # optional http client, useful for testing purpose
+  # if unset the the default is HTTPoison
+  http_client: HTTPoison
 ```
 
 You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
