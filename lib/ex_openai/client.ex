@@ -1,6 +1,5 @@
 defmodule ExOpenAI.Client do
   @moduledoc false
-  @behaviour ExOpenAI.ClientBehaviour
   # use HTTPoison.Base
   alias ExOpenAI.Config
 
