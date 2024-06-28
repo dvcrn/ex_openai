@@ -393,6 +393,17 @@ end)
                      ExOpenAI.Codegen.keys_to_atoms(res)
                    )}
 
+                # TODO figure it out a better way to understand what type is getting here
+                types when is_list(types) ->
+                  {:component, comp} = types |> List.first()
+                  ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+                  {:ok,
+                   struct(
+                     ExOpenAI.Codegen.string_to_component(comp),
+                     ExOpenAI.Codegen.keys_to_atoms(res)
+                   )}
+
                 _ ->
                   {:ok, res}
               end
@@ -402,7 +413,7 @@ end)
           end
         end
 
-        ExOpenAI.Client.api_call(
+        ExOpenAI.Config.http_client().api_call(
           method,
           url,
           body_params,

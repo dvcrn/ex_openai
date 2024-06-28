@@ -43,7 +43,7 @@ defmodule ExOpenAI.Config do
   def http_headers, do: get_config_value(:http_headers, [])
 
   # HTTP client can be customized to facilitate testing
-  def http_client, do: get_config_value(:http_client, HTTPoison)
+  def http_client, do: get_config_value(:http_client, ExOpenAI.Client)
 
   defp get_config_value(key, default \\ nil) do
     value =

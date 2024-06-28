@@ -5,7 +5,7 @@ defmodule ExOpenAI.MixProject do
     [
       app: :ex_openai,
       version: "1.5.1",
-      elixir: "~> 1.13",
+      elixir: "~> 1.16",
       description: description(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -53,15 +53,15 @@ defmodule ExOpenAI.MixProject do
   defp deps do
     [
       {:jason, "~> 1.4"},
-      {:mock, "~> 0.3.6", only: :test},
-      {:httpoison, "~> 2.1.0"},
-      {:mix_test_watch, "~> 1.0", only: :test},
-      {:ex_doc, ">= 0.19.2", only: :dev},
-      {:exvcr, "~> 0.14.4", only: :test},
+      {:mock, "~> 0.3.8", only: :test},
+      {:httpoison, "~> 2.2.1"},
+      {:mix_test_watch, "~> 1.2", only: :test},
+      {:ex_doc, ">= 0.34.1", only: :dev},
+      {:exvcr, "~> 0.15.1", only: :test},
       {:exjsx, "~> 4.0", only: :test},
-      {:yaml_elixir, "~> 2.9"},
-      {:dialyxir, "~> 1.2", only: [:dev], runtime: false},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
+      {:yaml_elixir, "~> 2.11"},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end
