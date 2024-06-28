@@ -203,6 +203,14 @@ defmodule ExOpenAI.Client do
     |> convert_response.()
   end
 
+  @callback api_call(
+              method :: atom(),
+              url :: String.t(),
+              params :: Keyword.t(),
+              request_content_type :: Keyword.t(),
+              request_options :: Keyword.t(),
+              convert_response :: any()
+            ) :: {:ok, res :: term()} | {:error, res :: term()}
   def api_call(:get, url, _params, _request_content_type, request_options, convert_response),
     do: api_get(url, request_options, convert_response)
 

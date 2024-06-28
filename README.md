@@ -138,9 +138,9 @@ config :ex_openai,
   http_headers: [
     {"OpenAI-Beta", "assistants=v1"}
   ],
-  # optional http client, useful for testing purpose
-  # if unset the the default is HTTPoison
-  http_client: HTTPoison
+  # optional http client, useful for testing purposes on dependent projects
+  # if unset the default client is ExOpenAI.Client
+  http_client: ExOpenAI.Client
 ```
 
 You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
