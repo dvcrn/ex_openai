@@ -771,7 +771,6 @@ defmodule ExOpenAI.Codegen do
                 "Warning! Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
               )
 
-              IO.inspect(key, label: "Key")
               String.to_atom(key)
           end,
           keys_to_atoms(val)
