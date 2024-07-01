@@ -12,7 +12,8 @@ defmodule ExOpenAI.Config do
     :api_key,
     :organization_key,
     :http_options,
-    :http_headers
+    :http_headers,
+    :http_client
   ]
 
   def start_link(opts), do: GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -32,14 +33,17 @@ defmodule ExOpenAI.Config do
   def org_key, do: get_config_value(:organization_key)
 
   # API Url
-	# Other clients allow overriding via the OPENAI_API_URL/OPENAI_API_BASE environment variable,
-	# but this is set via config with the default being https://api.openai.com/v1
+  # Other clients allow overriding via the OPENAI_API_URL/OPENAI_API_BASE environment variable,
+  # but this is set via config with the default being https://api.openai.com/v1
   def api_url, do: get_config_value(:base_url, @openai_url)
 
   # HTTP Options
   def http_options, do: get_config_value(:http_options, [])
 
   def http_headers, do: get_config_value(:http_headers, [])
+
+  # HTTP client can be customized to facilitate testing
+  def http_client, do: get_config_value(:http_client, ExOpenAI.Client)
 
   defp get_config_value(key, default \\ nil) do
     value =
