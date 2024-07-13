@@ -136,7 +136,7 @@ config :ex_openai,
   http_options: [recv_timeout: 50_000],
   # optional, default request headers. The following header is required for Assistant endpoints, which are in beta as of December 2023.
   http_headers: [
-    {"OpenAI-Beta", "assistants=v1"}
+    {"OpenAI-Beta", "assistants=v2"}
   ],
   # optional http client, useful for testing purposes on dependent projects
   # if unset the default client is ExOpenAI.Client
