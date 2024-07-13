@@ -520,9 +520,10 @@ defmodule ExOpenAI.Codegen do
         {:component, String.replace(ref, "#/components/schemas/", "")}
 
       %{"oneOf" => list} ->
-        Enum.map(list, fn %{"$ref" => ref} ->
-          {:component, String.replace(ref, "#/components/schemas/", "")}
-        end)
+        {:oneOf,
+         Enum.map(list, fn %{"$ref" => ref} ->
+           {:component, String.replace(ref, "#/components/schemas/", "")}
+         end)}
     end
   end
 

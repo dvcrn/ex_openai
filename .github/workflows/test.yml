@@ -3,16 +3,12 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-20.04
-    name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
-    strategy:
-      matrix:
-        otp: ['23.3']
-        elixir: ['1.14.3']
+    name: Run test
     steps:
       - uses: actions/checkout@v3
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{matrix.otp}}
-          elixir-version: ${{matrix.elixir}}
+          version-file: ".tool-versions"
+          version-type: "strict"
       - run: mix deps.get
       - run: mix test

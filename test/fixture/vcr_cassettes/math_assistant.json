@@ -1,0 +1,202 @@
+[
+  {
+    "request": {
+      "options": {
+        "recv_timeout": 30000
+      },
+      "body": "{\"name\":\"Math Teacher\",\"tools\":[{\"type\":\"code_interpreter\"}],\"model\":\"gpt-4o\"}",
+      "url": "https://api.openai.com/v1/assistants?",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "application/json",
+        "OpenAI-Beta": "assistants=v2"
+      },
+      "method": "post",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"asst_pF5jY1T3YTFO9zfVgLCLJXen\",\n  \"object\": \"assistant\",\n  \"created_at\": 1720838525,\n  \"name\": \"Math Teacher\",\n  \"description\": null,\n  \"model\": \"gpt-4o\",\n  \"instructions\": null,\n  \"tools\": [\n    {\n      \"type\": \"code_interpreter\"\n    }\n  ],\n  \"top_p\": 1.0,\n  \"temperature\": 1.0,\n  \"tool_resources\": {\n    \"code_interpreter\": {\n      \"file_ids\": []\n    }\n  },\n  \"metadata\": {},\n  \"response_format\": \"auto\"\n}",
+      "headers": {
+        "Date": "Sat, 13 Jul 2024 02:42:05 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "418",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "openai-organization": "mercari-8",
+        "x-request-id": "req_04688bd2b9fca7c9f40ed301e0dc087c",
+        "openai-processing-ms": "75",
+        "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+        "CF-Cache-Status": "DYNAMIC",
+        "Set-Cookie": "__cf_bm=stJu94NaiHURTrn75MVEIMnwn_ooZ2wqVrdhB7ZPobg-1720838525-1.0.1.1-WpDGfydEkh2qf5fuhw6Ht3b8Q9xAPuJajgYh9uaHfYxEHsS8fGtPPOG8dqSR4GvPyMcmY1pjz3DMyjZfFHPSCw; path=/; expires=Sat, 13-Jul-24 03:12:05 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "8a25eaef2da1795f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": {
+        "recv_timeout": 30000
+      },
+      "body": "{}",
+      "url": "https://api.openai.com/v1/threads?",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "application/json",
+        "OpenAI-Beta": "assistants=v2"
+      },
+      "method": "post",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"thread_DhBICESO7TvfyhBUXiqCPnFl\",\n  \"object\": \"thread\",\n  \"created_at\": 1720838525,\n  \"metadata\": {},\n  \"tool_resources\": {}\n}",
+      "headers": {
+        "Date": "Sat, 13 Jul 2024 02:42:05 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "137",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "openai-organization": "mercari-8",
+        "x-request-id": "req_c1f6a84ea16fe564021fda33ccee7888",
+        "openai-processing-ms": "30",
+        "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+        "CF-Cache-Status": "DYNAMIC",
+        "Set-Cookie": "__cf_bm=SPfQrKqa79woAewqeJbZ5oK6VzDHDh.K8ZgsBj0t0nw-1720838525-1.0.1.1-xQDfFZ4LKhUZGcxfxkdxkZv97qMO.0CUwWUXbnuTQkIvTnmb91iVQmfVVfDDwemLecJ8dt4wJ6VUOEM6SMok5Q; path=/; expires=Sat, 13-Jul-24 03:12:05 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "8a25eaf0df82795f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": {
+        "recv_timeout": 30000
+      },
+      "body": "{\"role\":\"user\",\"content\":\"I need to solve the equation `3x + 11 = 14`. Can you help me?\"}",
+      "url": "https://api.openai.com/v1/threads/thread_DhBICESO7TvfyhBUXiqCPnFl/messages?",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "application/json",
+        "OpenAI-Beta": "assistants=v2"
+      },
+      "method": "post",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"msg_fp1mk5184X7Ah5Qjl6wCVetA\",\n  \"object\": \"thread.message\",\n  \"created_at\": 1720838525,\n  \"assistant_id\": null,\n  \"thread_id\": \"thread_DhBICESO7TvfyhBUXiqCPnFl\",\n  \"run_id\": null,\n  \"role\": \"user\",\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": {\n        \"value\": \"I need to solve the equation `3x + 11 = 14`. Can you help me?\",\n        \"annotations\": []\n      }\n    }\n  ],\n  \"attachments\": [],\n  \"metadata\": {}\n}",
+      "headers": {
+        "Date": "Sat, 13 Jul 2024 02:42:05 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "435",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "openai-organization": "mercari-8",
+        "x-request-id": "req_247f1976132c9d8f21696c82d0df8228",
+        "openai-processing-ms": "49",
+        "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+        "CF-Cache-Status": "DYNAMIC",
+        "Set-Cookie": "__cf_bm=9h9lB92e3prfhSYS55lezSv1PYw8wD.r2tR_C6Y0Ivg-1720838525-1.0.1.1-iHfuQplXvE1BZiGaMQdRwha2wixDOoysvByfQHkmaaZ3ltvPKAnZ24QeK_KEccuzshVdzVBMu5BuzjTsETVSbg; path=/; expires=Sat, 13-Jul-24 03:12:05 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "8a25eaf228e2795f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": {
+        "recv_timeout": 30000
+      },
+      "body": "{\"assistant_id\":\"asst_pF5jY1T3YTFO9zfVgLCLJXen\"}",
+      "url": "https://api.openai.com/v1/threads/thread_DhBICESO7TvfyhBUXiqCPnFl/runs?",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "application/json",
+        "OpenAI-Beta": "assistants=v2"
+      },
+      "method": "post",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"run_5j4vPClNuTQjTxC45Bk1IJTk\",\n  \"object\": \"thread.run\",\n  \"created_at\": 1720838526,\n  \"assistant_id\": \"asst_pF5jY1T3YTFO9zfVgLCLJXen\",\n  \"thread_id\": \"thread_DhBICESO7TvfyhBUXiqCPnFl\",\n  \"status\": \"queued\",\n  \"started_at\": null,\n  \"expires_at\": 1720839126,\n  \"cancelled_at\": null,\n  \"failed_at\": null,\n  \"completed_at\": null,\n  \"required_action\": null,\n  \"last_error\": null,\n  \"model\": \"gpt-4o\",\n  \"instructions\": null,\n  \"tools\": [\n    {\n      \"type\": \"code_interpreter\"\n    }\n  ],\n  \"tool_resources\": {},\n  \"metadata\": {},\n  \"temperature\": 1.0,\n  \"top_p\": 1.0,\n  \"max_completion_tokens\": null,\n  \"max_prompt_tokens\": null,\n  \"truncation_strategy\": {\n    \"type\": \"auto\",\n    \"last_messages\": null\n  },\n  \"incomplete_details\": null,\n  \"usage\": null,\n  \"response_format\": \"auto\",\n  \"tool_choice\": \"auto\",\n  \"parallel_tool_calls\": true\n}",
+      "headers": {
+        "Date": "Sat, 13 Jul 2024 02:42:06 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "847",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "openai-organization": "mercari-8",
+        "x-request-id": "req_1d8d8495e7f7580926b77498d64c9934",
+        "openai-processing-ms": "240",
+        "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+        "CF-Cache-Status": "DYNAMIC",
+        "Set-Cookie": "__cf_bm=vFAM3bVZAboIBuxQIZ4SQWCWKTs0GrGlcimRSp9mKTw-1720838526-1.0.1.1-pRzzuXwdWmVqfO04K2J_bTZyObvhHTf0HD6LIRTG0UHuuC4vRSDZSyxqDwJvZ42ECTPZNmLpj11qdkdqy8HrXw; path=/; expires=Sat, 13-Jul-24 03:12:06 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "8a25eaf39a6c795f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": {
+        "recv_timeout": 30000
+      },
+      "body": "",
+      "url": "https://api.openai.com/v1/threads/thread_DhBICESO7TvfyhBUXiqCPnFl/messages?",
+      "headers": {
+        "Authorization": "***",
+        "OpenAI-Organization": "***",
+        "Content-type": "application/json",
+        "OpenAI-Beta": "assistants=v2"
+      },
+      "method": "get",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"id\": \"msg_tC2xiR0mJbTzTzYrIYDj1l21\",\n      \"object\": \"thread.message\",\n      \"created_at\": 1720838527,\n      \"assistant_id\": \"asst_pF5jY1T3YTFO9zfVgLCLJXen\",\n      \"thread_id\": \"thread_DhBICESO7TvfyhBUXiqCPnFl\",\n      \"run_id\": \"run_5j4vPClNuTQjTxC45Bk1IJTk\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {\n            \"value\": \"Of course! Let's solve the equation \\\\( 3x + 11 = 14 \\\\).\\n\\nHere are the steps:\\n\\n1. Subtract 11 from both sides of the equation to isolate the term with the variable \\\\( x \\\\).\\n\\\\[ 3x + 11 - 11 = 14 - 11 \\\\]\\n\\\\[ 3x = 3 \\\\]\\n\\n2. Divide both sides by 3 to solve for \\\\( x \\\\).\\n\\\\[ \\\\frac{3x}{3} = \\\\frac{3}{3} \\\\]\\n\\\\[ x = 1 \\\\]\\n\\nSo, the solution to the equation \\\\( 3x + 11 = 14 \\\\) is \\\\( x = 1 \\\\).\",\n            \"annotations\": []\n          }\n        }\n      ],\n      \"attachments\": [],\n      \"metadata\": {}\n    },\n    {\n      \"id\": \"msg_fp1mk5184X7Ah5Qjl6wCVetA\",\n      \"object\": \"thread.message\",\n      \"created_at\": 1720838525,\n      \"assistant_id\": null,\n      \"thread_id\": \"thread_DhBICESO7TvfyhBUXiqCPnFl\",\n      \"run_id\": null,\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": {\n            \"value\": \"I need to solve the equation `3x + 11 = 14`. Can you help me?\",\n            \"annotations\": []\n          }\n        }\n      ],\n      \"attachments\": [],\n      \"metadata\": {}\n    }\n  ],\n  \"first_id\": \"msg_tC2xiR0mJbTzTzYrIYDj1l21\",\n  \"last_id\": \"msg_fp1mk5184X7Ah5Qjl6wCVetA\",\n  \"has_more\": false\n}",
+      "headers": {
+        "Date": "Sat, 13 Jul 2024 02:42:11 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1589",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "openai-organization": "mercari-8",
+        "x-request-id": "req_87699a46cb06eb749af47052275f9a24",
+        "openai-processing-ms": "44",
+        "strict-transport-security": "max-age=15552000; includeSubDomains; preload",
+        "CF-Cache-Status": "DYNAMIC",
+        "Set-Cookie": "__cf_bm=as8VQDJ4zYzmVzpooRFo7to_CPkuyiuIl6XxPLTIimM-1720838531-1.0.1.1-MpNlalQX3TjGpkLYT_HPVYclTfOJmavKR5a.eup.BHeHPmPvXwrdbN1bMAlR_htId7G2JzqyKrR_DUahMge0aA; path=/; expires=Sat, 13-Jul-24 03:12:11 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "8a25eb158a14795f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  }
+]
