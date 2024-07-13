@@ -19,14 +19,14 @@ defmodule ExOpenAI.AssistantTest do
 
       {:ok, thread} = ExOpenAI.Threads.create_thread()
 
-      {:ok, msg} =
+      {:ok, _msg} =
         ExOpenAI.Threads.create_message(
           thread.id,
           "I need to solve the equation `3x + 11 = 14`. Can you help me?",
           "user"
         )
 
-      {:ok, run} =
+      {:ok, _run} =
         ExOpenAI.Threads.create_run(
           thread.id,
           assistant.id
