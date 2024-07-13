@@ -12,6 +12,7 @@ defmodule ExOpenAI.AudioTest do
       audio = File.read!("#{__DIR__}/testdata/audio.wav")
 
       {:ok, res} = ExOpenAI.Audio.create_transcription({"audio.wav", audio}, "whisper-1")
+
       assert res.text == "Hello, hello, hello, just a test."
     end
   end

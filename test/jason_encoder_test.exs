@@ -35,6 +35,6 @@ defmodule ExOpenAI.JasonEncoderTest do
     ]
 
     assert encode_and_return(msgs) ==
-             "[{\"content\":\"Hello!\",\"role\":\"user\"},{\"content\":\"What's up?\",\"role\":\"assistant\"},{\"content\":\"What ist the color of the sky?\",\"role\":\"user\"}]"
+             "[{\"role\":\"user\",\"content\":\"Hello!\"},{\"role\":\"assistant\",\"content\":\"What's up?\"},{\"role\":\"user\",\"content\":\"What ist the color of the sky?\"}]"
   end
 end

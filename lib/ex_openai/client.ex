@@ -1,7 +1,7 @@
 defmodule ExOpenAI.Client do
   @moduledoc false
-  alias ExOpenAI.Config
   use HTTPoison.Base
+  alias ExOpenAI.Config
 
   def process_url(url), do: Config.api_url() <> url
 
@@ -16,6 +16,9 @@ defmodule ExOpenAI.Client do
   def handle_response(httpoison_response) do
     case httpoison_response do
       {:ok, %HTTPoison.Response{status_code: 200, body: {:ok, body}}} ->
+        {:ok, body}
+
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok, body}
 
       {:ok, %HTTPoison.Response{body: {:ok, body}}} ->
@@ -200,6 +203,14 @@ defmodule ExOpenAI.Client do
     |> convert_response.()
   end
 
+  @callback api_call(
+              method :: atom(),
+              url :: String.t(),
+              params :: Keyword.t(),
+              request_content_type :: Keyword.t(),
+              request_options :: Keyword.t(),
+              convert_response :: any()
+            ) :: {:ok, res :: term()} | {:error, res :: term()}
   def api_call(:get, url, _params, _request_content_type, request_options, convert_response),
     do: api_get(url, request_options, convert_response)
 
