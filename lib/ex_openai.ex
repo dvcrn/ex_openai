@@ -257,8 +257,17 @@ end)
         merged_required_args
         |> Enum.map(fn item -> quote do: unquote(ExOpenAI.Codegen.type_to_spec(item.type)) end)
 
-      # convert optional args into keyword list
-      response_spec = ExOpenAI.Codegen.type_to_spec(response_type)
+      # construct response spec
+      # for list types, instead of {:ok, list1 | list2}, we want {:ok, list1} | {:ok, list2}
+      response_spec =
+        case response_type do
+          {:oneOf, c} ->
+            Enum.map(c, fn comp -> {:ok, ExOpenAI.Codegen.type_to_spec(comp)} end)
+            |> Enum.reduce(&{:|, [], [&1, &2]})
+
+          etc ->
+            {:ok, ExOpenAI.Codegen.type_to_spec(etc)}
+        end
 
       optional_args =
         merged_optional_args
@@ -308,11 +317,11 @@ end)
 
       # fx without opts
       @spec unquote(name)(unquote_splicing(spec)) ::
-              {:ok, unquote(response_spec)} | {:error, any()}
+              unquote(response_spec) | {:error, any()}
 
       # fx with opts
       @spec unquote(name)(unquote_splicing(spec), unquote(optional_args)) ::
-              {:ok, unquote(response_spec)} | {:error, any()}
+              unquote(response_spec) | {:error, any()}
 
       def unquote(name)(unquote_splicing(arg_names), opts \\ []) do
         # store binding so we can't access args of the function later
