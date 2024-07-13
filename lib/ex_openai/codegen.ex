@@ -67,6 +67,11 @@ defmodule ExOpenAI.Codegen do
   def module_overwrites, do: [ExOpenAI.Components.Model]
 
   @doc """
+   Define atoms that are not automatically loaded through AST unpacking but are supported by the API
+  """
+  defp _manual_atoms, do: [:annotations]
+
+  @doc """
   Extra opts that should be injected and are not part of the OpenAI docs
   These are custom args that are unique to this package
   """
