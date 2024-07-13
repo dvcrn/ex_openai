@@ -22,6 +22,7 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 	- [Configuration](#configuration)
 	- [Usage](#usage)
 		- [Using ChatGPT APIs](#using-chatgpt-apis)
+		- [Using Assistant APIs](#using-assistant-apis)
 		- [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
 			- [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
 		- [Usage of Audio related](#usage-of-audio-related)
@@ -227,6 +228,39 @@ msgs = [
     }
   )
 ```
+
+### Using Assistant APIs
+
+```elixir
+{:ok, assistant} =
+	ExOpenAI.Assistants.create_assistant(:"gpt-4o",
+		name: "Math Teacher",
+		instruction:
+			"You are a personal math tutor. Write and run code to answer math questions.",
+		tools: [%{type: "code_interpreter"}]
+	)
+
+{:ok, thread} = ExOpenAI.Threads.create_thread()
+
+{:ok, _msg} =
+	ExOpenAI.Threads.create_message(
+		thread.id,
+		"I need to solve the equation `3x + 11 = 14`. Can you help me?",
+		"user"
+	)
+
+{:ok, _run} =
+	ExOpenAI.Threads.create_run(
+		thread.id,
+		assistant.id
+	)
+
+# sleep for 5 seconds
+# :timer.sleep(5000)
+
+{:ok, messages} = ExOpenAI.Threads.list_messages(thread.id)
+```
+
 
 ### Usage of endpoints that require files to upload
 
