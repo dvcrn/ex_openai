@@ -65,9 +65,15 @@ defmodule ExOpenAI.StreamingClient do
     |> String.trim()
     |> case do
       "[DONE]" ->
+        Logger.debug("Received [DONE]")
         forward_response(pid_or_fx, :finish)
 
+      "event: " <> event_type ->
+        Logger.debug("Received event: #{inspect(event_type)}")
+
       etc ->
+        Logger.debug("Received event payload: #{inspect(etc)}")
+
         json =
           Jason.decode(etc)
           |> convert_fx.()
