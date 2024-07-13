@@ -393,16 +393,31 @@ end)
                      ExOpenAI.Codegen.keys_to_atoms(res)
                    )}
 
-                # TODO figure it out a better way to understand what type is getting here
-                types when is_list(types) ->
-                  {:component, comp} = types |> List.first()
-                  ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+                # handling for oneOf, aka a list of potential types that the response can have
+                # since we don't know exactly which it is, we can try to convert it to the first one
+                {:oneOf, comps} when is_list(comps) ->
+                  # find if we have a component in the list
+                  found_comp =
+                    comps
+                    |> Enum.find(fn
+                      {:component, _} -> true
+                      _ -> false
+                    end)
 
-                  {:ok,
-                   struct(
-                     ExOpenAI.Codegen.string_to_component(comp),
-                     ExOpenAI.Codegen.keys_to_atoms(res)
-                   )}
+                  case found_comp do
+                    nil ->
+                      {:ok, res}
+
+                    found_comp ->
+                      {:component, comp} = found_comp
+                      ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+                      {:ok,
+                       struct(
+                         ExOpenAI.Codegen.string_to_component(comp),
+                         ExOpenAI.Codegen.keys_to_atoms(res)
+                       )}
+                  end
 
                 _ ->
                   {:ok, res}
