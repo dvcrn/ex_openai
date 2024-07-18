@@ -104,14 +104,17 @@ defmodule ExOpenAI.Client do
     |> convert_response.()
   end
 
+  defp strip_params(params) do
+    params
+    # remove stream_to from params as PID messes with Jason
+    |> Map.drop([:stream_to, :openai_organization_key, :openai_api_key])
+  end
+
   def api_post(url, params \\ [], request_options \\ [], convert_response) do
     body =
       params
       |> Enum.into(%{})
-      # remove stream_to from params as PID messes with Jason
-      |> Map.delete(:stream_to)
-      |> Map.delete(:openai_organization_key)
-      |> Map.delete(:openai_api_key)
+      |> strip_params()
       |> Jason.encode()
       |> elem(1)
 
@@ -189,6 +192,9 @@ defmodule ExOpenAI.Client do
     multipart_body =
       {:multipart,
        params
+       |> Enum.into(%{})
+       |> strip_params()
+       |> Map.to_list()
        |> Enum.map(&multipart_param/1)}
 
     headers =
