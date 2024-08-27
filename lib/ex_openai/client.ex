@@ -3,7 +3,7 @@ defmodule ExOpenAI.Client do
   use HTTPoison.Base
   alias ExOpenAI.Config
 
-  def process_url(url), do: Config.api_url() <> url
+  def add_base_url(url, base_url), do: Config.api_url(base_url) <> url
 
   def process_response_body(body) do
     case Jason.decode(body) do
@@ -98,7 +98,10 @@ defmodule ExOpenAI.Client do
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
+    base_url = Map.get(request_options_map, :base_url)
+
     url
+    |> add_base_url(base_url)
     |> get(headers, request_options)
     |> handle_response()
     |> convert_response.()
@@ -133,7 +136,10 @@ defmodule ExOpenAI.Client do
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
+    base_url = Map.get(request_options_map, :base_url)
+
     url
+    |> add_base_url(base_url)
     |> post(body, headers, request_options)
     |> handle_response()
     |> convert_response.()
@@ -155,7 +161,10 @@ defmodule ExOpenAI.Client do
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
+    base_url = Map.get(request_options_map, :base_url)
+
     url
+    |> add_base_url(base_url)
     |> delete(headers, request_options)
     |> handle_response()
     |> convert_response.()
@@ -203,7 +212,10 @@ defmodule ExOpenAI.Client do
       |> add_organization_header(Map.get(request_options_map, :openai_organization_key, nil))
       |> add_bearer_header(Map.get(request_options_map, :openai_api_key, nil))
 
+    base_url = Map.get(request_options_map, :base_url)
+
     url
+    |> add_base_url(base_url)
     |> post(multipart_body, headers, request_options)
     |> handle_response()
     |> convert_response.()
