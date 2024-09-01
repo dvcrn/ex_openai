@@ -85,6 +85,13 @@ defmodule ExOpenAI.Codegen do
         example: "",
         name: "openai_organization_key",
         type: "string"
+      },
+      %{
+        description:
+          "Which API endpoint to use as base, defaults to https://api.openai.com/v1",
+        example: "",
+        name: "base_url",
+        type: "string"
       }
     ]
   end

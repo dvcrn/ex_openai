@@ -11,30 +11,30 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 **Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you notice anything acting up.
 
 - [Elixir SDK for OpenAI APIs](#elixir-sdk-for-openai-apis)
-	- [Features](#features)
-	- [Installation](#installation)
-	- [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
-		- [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
-			- [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
-			- [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
-			- [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
-	- [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
-	- [Configuration](#configuration)
-	- [Usage](#usage)
-		- [Using ChatGPT APIs](#using-chatgpt-apis)
-		- [Using Assistant APIs](#using-assistant-apis)
-		- [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
-			- [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
-		- [Usage of Audio related](#usage-of-audio-related)
-		- [Streaming data](#streaming-data)
-			- [Streaming with a callback function](#streaming-with-a-callback-function)
-			- [Streaming with a separate process](#streaming-with-a-separate-process)
-			- [Caveats](#caveats)
-	- [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
-	- [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
-	- [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
-	- [License](#license)
-	- [Attribution](#attribution)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
+    - [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
+      - [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
+      - [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
+      - [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
+  - [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
+  - [Configuration](#configuration)
+  - [Usage](#usage)
+    - [Using ChatGPT APIs](#using-chatgpt-apis)
+    - [Using Assistant APIs](#using-assistant-apis)
+    - [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
+      - [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
+    - [Usage of Audio related](#usage-of-audio-related)
+    - [Streaming data](#streaming-data)
+      - [Streaming with a callback function](#streaming-with-a-callback-function)
+      - [Streaming with a separate process](#streaming-with-a-separate-process)
+      - [Caveats](#caveats)
+  - [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
+  - [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
+  - [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
+  - [License](#license)
+  - [Attribution](#attribution)
 
 ## Features
 
@@ -144,10 +144,10 @@ config :ex_openai,
   http_client: ExOpenAI.Client
 ```
 
-You can also pass `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
+You can also pass `base_url`, `api_key` and `organization_key` directly by passing them into the `opts` argument when calling the openai apis:
 
 ```elixir
-ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def")
+ExOpenAI.Models.list_models(openai_api_key: "abc", openai_organization_key: "def", base_url: "https://cheapai.local")
 ```
 
 ## Usage
@@ -261,7 +261,6 @@ msgs = [
 {:ok, messages} = ExOpenAI.Threads.list_messages(thread.id)
 ```
 
-
 ### Usage of endpoints that require files to upload
 
 Load your file into memory, then pass it into the file parameter
@@ -311,7 +310,6 @@ end
 
 ExOpenAI.Completions.create_completion "text-davinci-003", "hello world", stream: true, stream_to: callback
 ```
-
 
 #### Streaming with a separate process
 
