@@ -96,18 +96,10 @@ defmodule ExOpenAI.Codegen do
     ]
   end
 
-  @doc """
-  Extracts the group name from a given URL.
-
-  ## Examples
-
-      iex> UrlExtractor.extract_group_from_url("/fine-tunes/{fine_tune_id}")
-      "FineTunes"
-
-      iex> UrlExtractor.extract_group_from_url("/files/{file_id}/content")
-      "Files"
-
-  """
+  # Extracts the group name from a given URL.
+  # Examples:
+  #   "/fine-tunes/{fine_tune_id}" -> "FineTunes"
+  #   "/files/{file_id}/content" -> "Files"
   defp extract_group_from_url(url) do
     String.split(url, "/")
     |> Enum.at(1)
