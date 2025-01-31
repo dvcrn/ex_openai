@@ -41,7 +41,7 @@ defmodule ExOpenAI.StreamingClient do
   end
 
   def init(stream_to: pid, convert_response_fx: fx) do
-    {:ok, %{stream_to: pid, convert_response_fx: fx}}
+    {:ok, %{stream_to: pid, convert_response_fx: fx, buffer: ""}}
   end
 
   @doc """
@@ -55,6 +55,43 @@ defmodule ExOpenAI.StreamingClient do
 
   def forward_response(callback_fx, data) when is_function(callback_fx) do
     callback_fx.(data)
+  end
+
+  defp parse_lines(lines, state) do
+    # The last element might be incomplete JSON, which we keep.
+    # Everything that is valid JSON, we forward immediately.
+    {remaining_buffer, updated_state} =
+      Enum.reduce(lines, {"", state}, fn line, {partial_acc, st} ->
+        # Reconstruct the current attempt: partial data + the current line
+        attempt = (partial_acc <> line) |> String.trim()
+
+        cond do
+          attempt == "[DONE]" ->
+            Logger.debug("Received [DONE]")
+            forward_response(st.stream_to, :finish)
+            {"", st}
+
+          attempt == "" ->
+            # Possibly just an empty line or leftover
+            {"", st}
+
+          true ->
+            # Attempt to parse
+            case Jason.decode(attempt) do
+              {:ok, decoded} ->
+                # Once successfully decoded, forward, and reset partial buffer
+                message = st.convert_response_fx.({:ok, decoded})
+                forward_response(st.stream_to, {:data, message})
+                {"", st}
+
+              {:error, _} ->
+                # Not valid JSON yet; treat entire attempt as partial
+                {attempt, st}
+            end
+        end
+      end)
+
+    {remaining_buffer, updated_state}
   end
 
   def handle_chunk(
@@ -103,20 +140,31 @@ defmodule ExOpenAI.StreamingClient do
     {:noreply, state}
   end
 
-  def handle_info(
-        %HTTPoison.AsyncChunk{chunk: chunk},
-        state
-      ) do
-    chunk
-    |> String.trim()
-    |> String.split("data:")
-    |> Enum.map(&String.trim/1)
-    |> Enum.filter(&(&1 != ""))
-    |> Enum.each(fn subchunk ->
-      handle_chunk(subchunk, state)
-    end)
+  # def handle_info(%HTTPoison.AsyncChunk{chunk: "data: " <> chunk_data}, state) do
+  #   Logger.debug("Received AsyncChunk DATA: #{inspect(chunk_data)}")
+  # end
 
-    {:noreply, state}
+  def handle_info(%HTTPoison.AsyncChunk{chunk: chunk}, state) do
+    Logger.debug("Received AsyncChunk (partial): #{inspect(chunk)}")
+
+    # Combine the existing buffer with the new chunk
+    new_buffer = state.buffer <> chunk
+
+    # Split by "data:" lines, but be mindful of partial JSON
+    lines =
+      new_buffer
+      |> String.split(~r/data: /)
+
+    # The first chunk might still hold partial data from the end
+    # or the last chunk might be partial data at the end.
+
+    # We'll need a function that attempts to parse each line. If it fails, we store
+    # that line back to the buffer for the next chunk.
+    {remaining_buffer, state_after_parse} = parse_lines(lines, state)
+
+    # Update the buffer in the new state
+    new_state = %{state_after_parse | buffer: remaining_buffer}
+    {:noreply, new_state}
   end
 
   def handle_info(%HTTPoison.Error{reason: reason}, state) do
