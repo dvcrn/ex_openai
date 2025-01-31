@@ -148,6 +148,14 @@ defmodule ExOpenAI.StreamingClient do
     {:noreply, state}
   end
 
+  def handle_info(
+        %HTTPoison.AsyncChunk{chunk: ": OPENROUTER PROCESSING\n\n"},
+        state
+      ) do
+    Logger.debug("received : OPENROUTER PROCESSING stamp")
+    {:noreply, state}
+  end
+
   # def handle_info(%HTTPoison.AsyncChunk{chunk: "data: " <> chunk_data}, state) do
   #   Logger.debug("Received AsyncChunk DATA: #{inspect(chunk_data)}")
   # end
