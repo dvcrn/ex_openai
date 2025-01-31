@@ -71,6 +71,9 @@ defmodule ExOpenAI.StreamingClient do
       "event: " <> event_type ->
         Logger.debug("Received event: #{inspect(event_type)}")
 
+      ": OPENROUTER PROCESSING" <> event_type ->
+        Logger.debug("Received event: #{inspect(event_type)}")
+
       etc ->
         Logger.debug("Received event payload: #{inspect(etc)}")
 
@@ -84,7 +87,7 @@ defmodule ExOpenAI.StreamingClient do
 
           {:error, err} ->
             Logger.warn("Received something that isn't JSON in stream: #{inspect(etc)}")
-            # forward_response(pid_or_fx, {:error, err})
+            forward_response(pid_or_fx, {:error, err})
         end
     end
   end
