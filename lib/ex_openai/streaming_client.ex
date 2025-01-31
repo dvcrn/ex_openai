@@ -169,6 +169,7 @@ defmodule ExOpenAI.StreamingClient do
     # Split by "data:" lines, but be mindful of partial JSON
     lines =
       new_buffer
+      |> String.replace(": OPENROUTER PROCESSING\n\n", "")
       |> String.split(~r/data: /)
 
     # The first chunk might still hold partial data from the end
