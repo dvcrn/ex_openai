@@ -86,7 +86,7 @@ defmodule ExOpenAI.StreamingClient do
             forward_response(pid_or_fx, {:data, res})
 
           {:error, err} ->
-            Logger.warn("Received something that isn't JSON in stream: #{inspect(etc)}")
+            Logger.warning("Received something that isn't JSON in stream: #{inspect(etc)}")
             forward_response(pid_or_fx, {:error, err})
         end
     end
