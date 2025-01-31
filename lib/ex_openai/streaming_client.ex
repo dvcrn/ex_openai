@@ -80,8 +80,16 @@ defmodule ExOpenAI.StreamingClient do
             case Jason.decode(attempt) do
               {:ok, decoded} ->
                 # Once successfully decoded, forward, and reset partial buffer
-                message = st.convert_response_fx.({:ok, decoded})
-                forward_response(st.stream_to, {:data, message})
+                case st.convert_response_fx.({:ok, decoded}) do
+                  {:ok, message} ->
+                    forward_response(st.stream_to, {:data, message})
+
+                  e ->
+                    Logger.warning(
+                      "Something went wrong trying to decode the response: #{inspect(e)}"
+                    )
+                end
+
                 {"", st}
 
               {:error, _} ->
