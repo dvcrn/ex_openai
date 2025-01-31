@@ -110,7 +110,7 @@ defmodule ExOpenAI.Client do
   defp strip_params(params) do
     params
     # remove stream_to from params as PID messes with Jason
-    |> Map.drop([:stream_to, :openai_organization_key, :openai_api_key])
+    |> Map.drop([:stream_to, :openai_organization_key, :openai_api_key, :base_url])
   end
 
   def api_post(url, params \\ [], request_options \\ [], convert_response) do
