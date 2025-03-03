@@ -118,7 +118,15 @@ end)
 
         @moduledoc "#{docstring_head}
 
-				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
+				Use any of these components: #{inspect(component.components)}"
+
+      :enum ->
+        @type t :: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.enum}))
+        @typespec quote(do: unquote(ExOpenAI.Codegen.type_to_spec({:enum, component.enum})))
+
+        @moduledoc "#{docstring_head}
+
+      This is an enum with values: #{inspect(component.enum |> Enum.map(&String.to_atom/1))}"
 
       :allOf ->
         @type t :: unquote(ExOpenAI.Codegen.type_to_spec({:oneOf, component.components}))
@@ -128,7 +136,7 @@ end)
 
         @moduledoc "#{docstring_head}
 
-				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
+				Use any of these components: #{inspect(component.components)}"
     end
 
     use ExOpenAI.Codegen.AstUnpacker
@@ -172,6 +180,13 @@ end)
         group: group
       } = fx
 
+      # if String.contains?(function_name, "create_chat_completion") do
+      # IO.puts(function_name)
+      # IO.inspect(fx)
+      #   System.halt()
+      # end
+
+
       name = String.to_atom(function_name)
 
       content_type =
@@ -191,6 +206,7 @@ end)
               )
 
           :get ->
+            # IO.inspect(args)
             Enum.filter(args, &Map.get(&1, :required?))
 
           :delete ->
@@ -234,10 +250,10 @@ end)
         |> ExOpenAI.Codegen.add_stream_to_opts_args()
         |> Kernel.++(ExOpenAI.Codegen.extra_opts_args())
 
-      optional_args_docstring =
+        optional_args_docstring =
         Enum.map_join(merged_optional_args, "\n\n", fn i ->
           s = "- `#{i.name}`"
-          s = if Map.has_key?(i, :description), do: "#{s}: #{Map.get(i, :description)}", else: s
+          s = if Map.has_key?(i, :description), do: "#{s}: #{inspect(Map.get(i, :description))}", else: s
 
           s =
             if Map.get(i, :example, "") != "",

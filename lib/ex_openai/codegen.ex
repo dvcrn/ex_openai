@@ -87,8 +87,7 @@ defmodule ExOpenAI.Codegen do
         type: "string"
       },
       %{
-        description:
-          "Which API endpoint to use as base, defaults to https://api.openai.com/v1",
+        description: "Which API endpoint to use as base, defaults to https://api.openai.com/v1",
         example: "",
         name: "base_url",
         type: "string"
@@ -229,6 +228,19 @@ defmodule ExOpenAI.Codegen do
 
   def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
 
+  def parse_type(%{"nullable" => nullable, "type" => type} = args) do
+    # remove the nullable key first
+    Map.drop(args, ["nullable"])
+    |> parse_type
+  end
+
+  # just nullable
+  def parse_type(%{"nullable" => nullable} = args) do
+    IO.puts("just nullable nothing else")
+    IO.inspect(args)
+    "any"
+  end
+
   def parse_type(%{"type" => type}), do: type
 
   def parse_property(
@@ -352,6 +364,18 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  # TODO: this needs fixing
+  # Handle the case where we have items but no explicit type (assume array)
+  def parse_property(%{"items" => items, "name" => name, "description" => description} = args)
+      when is_map(items) do
+    %{
+      type: {:array, parse_type(items)},
+      name: name,
+      description: description,
+      example: Map.get(args, "example", "")
+    }
+  end
+
   def parse_property(%{"$ref" => ref, "name" => name} = args) do
     %{
       name: name,
@@ -422,6 +446,32 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def parse_component_schema(%{"additionalProperties" => _, "type" => "object"} = schema) do
+    # Handle objects with additionalProperties but no properties
+    description = Map.get(schema, "description", "")
+
+    %{
+      description: description,
+      kind: :component,
+      required_props: [],
+      optional_props: []
+    }
+  end
+
+  def parse_component_schema(%{"enum" => enum, "type" => "string"} = schema) do
+    # Handle string enum components
+    description = Map.get(schema, "description", "")
+
+    %{
+      description: description,
+      kind: :enum,
+      enum: enum,
+      type: "string",
+      required_props: [],
+      optional_props: []
+    }
+  end
+
   # Handling for when the component isn't a full component by it's own, but instead embeds other components
   def parse_component_schema(%{"oneOf" => _oneOf} = args) do
     %{
@@ -433,13 +483,45 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  def parse_component_schema(%{"allOf" => _allOf} = args) do
+  def parse_component_schema(%{"anyOf" => _allOf} = args) do
     %{
-      kind: :allOf,
+      kind: :oneOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
       components: parse_property(args) |> Map.get(:type) |> elem(1),
       required_props: [],
       optional_props: []
+    }
+  end
+
+  def parse_component_schema(%{"$ref" => ref}) do
+    {:component, String.replace(ref, "#/components/schemas/", "")}
+  end
+
+  def parse_component_schema(%{"allOf" => allOfList} = args) do
+    #
+    # First pass - resolve all of the sub-components
+    resolved_all_of_list =
+      allOfList
+      |> Enum.map(&parse_component_schema(&1))
+
+    # todo: get all the required props of all nested items
+    nested_required_fields =
+      allOfList
+      |> Enum.map(fn x ->
+        case x do
+          %{"required" => required} -> required
+          _ -> []
+        end
+      end)
+      |> List.flatten()
+
+    %{
+      kind: :allOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: resolved_all_of_list,
+      required_prop_keys: nested_required_fields,
+      optional_props: [],
+      required_props: []
     }
   end
 
@@ -453,6 +535,11 @@ defmodule ExOpenAI.Codegen do
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
   defp parse_get_schema(%{"type" => type, "example" => example}) do
     %{type: type, example: example}
+  end
+
+  defp parse_get_schema(%{"$ref" => ref} = _args) do
+    %{type: {:component, String.replace(ref, "#/components/schemas/", "")}}
+    # %{type: "string"}
   end
 
   defp parse_get_schema(%{"type" => _type} = args),
@@ -526,6 +613,22 @@ defmodule ExOpenAI.Codegen do
     end
   end
 
+  # Case for empty response, aka nothing to return
+  defp extract_response_type(%{"200" => res200} = res) do
+    newRes =
+      res
+      |> Map.put("200", Map.put(res200, "content", %{"application/json" => %{}}))
+
+    nil
+
+    # extract_response_type(newRes)
+  end
+
+  def filter_arguments_by_location(arguments, location) do
+    arguments
+    |> Enum.filter(fn arg -> arg.in == location end)
+  end
+
   @doc """
   Parses a given "path". A path is what is mapped under the "paths" key of the OpenAI openapi docs, and represents an API endpoint (GET, POST, DELETE, PUT)
 
@@ -592,12 +695,21 @@ defmodule ExOpenAI.Codegen do
         },
         component_mapping
       ) do
+    # Get all parameters
+    # all_parameters = Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1))
+
+    # # Extract path parameters and query parameters separately
+    # path_parameters = filter_arguments_by_location(all_parameters, "path")
+    # query_parameters = filter_arguments_by_location(all_parameters, "query")
+
     %{
       endpoint: path,
       name: Macro.underscore(id),
       summary: summary,
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
+      # path_parameters: path_parameters,
+      # query_parameters: query_parameters,
       method: :post,
       request_body: parse_request_body(body, component_mapping),
       group: extract_group_from_url(path),
@@ -642,12 +754,21 @@ defmodule ExOpenAI.Codegen do
         },
         _component_mapping
       ) do
+    # Get all parameters
+    # all_parameters = Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1))
+
+    # # Extract path parameters and query parameters separately
+    # path_parameters = filter_arguments_by_location(all_parameters, "path")
+    # query_parameters = filter_arguments_by_location(all_parameters, "query")
+
     %{
       endpoint: path,
       name: Macro.underscore(id),
       summary: summary,
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
+      # path_parameters: path_parameters,
+      # query_parameters: query_parameters,
       method: :get,
       group: extract_group_from_url(path),
       response_type: extract_response_type(responses)
@@ -669,6 +790,11 @@ defmodule ExOpenAI.Codegen do
       |> Enum.reduce(%{}, fn {name, value}, acc ->
         Map.put(acc, name, parse_component_schema(value))
       end)
+
+    component_mapping = Enum.map(component_mapping, fn comp ->
+     finalize_schema(comp, component_mapping)
+    end)
+    |> Enum.reduce(%{}, fn {key, val}, acc -> Map.put(acc, key, val) end)
 
     # iterate through all URL pathes and generate a normalized map
     # eg path = /assistants/{xxx}
@@ -742,6 +868,13 @@ defmodule ExOpenAI.Codegen do
     {:%{}, [], parsed}
   end
 
+  def type_to_spec({:allOf, nested}) when is_list(nested) do
+    nested
+    |> Enum.map(&type_to_spec/1)
+    # handle as union type
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
   # nested component reference
   def type_to_spec({:component, component}) when is_binary(component) do
     # remote types to modules are represented with [:OpenAI, :Component, :X]
@@ -785,5 +918,73 @@ defmodule ExOpenAI.Codegen do
     s
     |> String.replace("/docs/", "https://platform.openai.com/docs/")
     |> String.replace("/tokenizer", "https://platform.openai.com/tokenizer")
+  end
+
+  def finalize_schema({:component, target_component_name}, all_components) do
+    finalized_sub_schema =
+      Map.get(all_components, target_component_name)
+
+    finalize_schema(finalized_sub_schema, all_components)
+  end
+
+  def finalize_schema(%{kind: :component} = schema, _all_comps) do
+    schema
+  end
+
+  def finalize_schema(
+        %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys},
+        all_components
+      ) do
+    # step 1: Resolve the schema of all nested components
+    finalized_schema =
+      component_list
+      |> Enum.map(fn schema ->
+        finalize_schema(schema, all_components)
+      end)
+      |> Enum.reduce(fn schema1, schema2 ->
+        Map.merge(schema1, schema2)
+      end)
+  end
+
+  def finalize_schema(
+        {name,
+         %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys}},
+        all_components
+      ) do
+    # step 1: Resolve the schema of all nested components
+    finalized_schema =
+      component_list
+      |> Enum.map(fn schema ->
+        finalize_schema(schema, all_components)
+      end)
+      |> Enum.reduce(fn schema1, schema2 ->
+        # merge all required_props and optional_props together
+        # traverse all optional_props
+        # step 1: Resolve the schema of all nested components
+        # merge all required_props and optional_props together
+        required_props = schema1.required_props ++ schema2.required_props
+        optional_props = schema1.optional_props ++ schema2.optional_props
+
+        # filter the required_props based on the required_prop_keys
+        required_props =
+          Enum.filter(required_props ++ optional_props, fn prop ->
+            prop.name in required_prop_keys
+          end)
+
+        optional_props =
+          Enum.filter(optional_props, fn prop ->
+            prop.name not in required_prop_keys
+          end)
+
+        Map.merge(schema1, %{required_props: required_props, optional_props: optional_props})
+        #
+        # Map.merge(schema1, %{required_props: schema1.required_props ++ schema2.required_props, optional_props: schema1.optional_props ++ schema2.optional_props})
+      end)
+
+    {name, finalized_schema}
+  end
+
+  def finalize_schema({name, schema} = comp, _all_components) do
+    comp
   end
 end

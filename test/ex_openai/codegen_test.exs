@@ -77,6 +77,22 @@ defmodule ExOpenAITest do
                {:|, [], [{:integer, [], []}, :auto]}
     end
 
+    test "allOf" do
+      assert ExOpenAI.Codegen.type_to_spec(
+               {:allOf, [{:component, "AssistantsApiResponseFormatOption"}, "string"]}
+             ) ==
+               {:|, [],
+                [
+                  {{:., [],
+                    [
+                      {:__aliases__, [alias: false],
+                       [:ExOpenAI, :Components, :AssistantsApiResponseFormatOption]},
+                      :t
+                    ]}, [], []},
+                  {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
+                ]}
+    end
+
     test "complex nesting" do
       sp =
         {:object,
@@ -129,7 +145,440 @@ defmodule ExOpenAITest do
            }
   end
 
+  describe "parse_component_schema/1 with additionalProperties" do
+    test "object schema with no properties and additionalProperties=false" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+        type: object
+        additionalProperties: false
+        description: 'Empty object with strict property definition'
+        ")
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == %{
+               kind: :component,
+               description: "Empty object with strict property definition",
+               required_props: [],
+               optional_props: []
+             }
+    end
+  end
+
   describe "parse_component_schema" do
+    test "CreateChatCompletionRequest" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~s"""
+          allOf:
+            - $ref: "#/components/schemas/CreateModelResponseProperties"
+            - type: object
+              properties:
+                messages:
+                  description: >
+                    A list of messages comprising the conversation so far. Depending
+                    on the
+
+                    [model](/docs/models) you use, different message types
+                    (modalities) are
+
+                    supported, like [text](/docs/guides/text-generation),
+
+                    [images](/docs/guides/vision), and [audio](/docs/guides/audio).
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/ChatCompletionRequestMessage"
+                modalities:
+                  $ref: "#/components/schemas/ResponseModalities"
+                reasoning_effort:
+                  $ref: "#/components/schemas/ReasoningEffort"
+                max_completion_tokens:
+                  description: >
+                    An upper bound for the number of tokens that can be generated
+                    for a completion, including visible output tokens and [reasoning
+                    tokens](/docs/guides/reasoning).
+                  type: integer
+                  nullable: true
+                frequency_penalty:
+                  type: number
+                  default: 0
+                  minimum: -2
+                  maximum: 2
+                  nullable: true
+                  description: >
+                    Number between -2.0 and 2.0. Positive values penalize new tokens
+                    based on
+
+                    their existing frequency in the text so far, decreasing the
+                    model's
+
+                    likelihood to repeat the same line verbatim.
+                presence_penalty:
+                  type: number
+                  default: 0
+                  minimum: -2
+                  maximum: 2
+                  nullable: true
+                  description: >
+                    Number between -2.0 and 2.0. Positive values penalize new tokens
+                    based on
+
+                    whether they appear in the text so far, increasing the model's
+                    likelihood
+
+                    to talk about new topics.
+                web_search_options:
+                  type: object
+                  title: Web search
+                  description: >
+                    This tool searches the web for relevant results to use in a
+                    response.
+
+                    Learn more about the [web search
+                    tool](/docs/guides/tools-web-search?api-mode=chat).
+                  properties:
+                    user_location:
+                      type: object
+                      nullable: true
+                      required:
+                        - type
+                        - approximate
+                      description: |
+                        Approximate location parameters for the search.
+                      properties:
+                        type:
+                          type: string
+                          description: >
+                            The type of location approximation. Always `approximate`.
+                          enum:
+                            - approximate
+                          x-stainless-const: true
+                        approximate:
+                          $ref: "#/components/schemas/WebSearchLocation"
+                    search_context_size:
+                      $ref: "#/components/schemas/WebSearchContextSize"
+                top_logprobs:
+                  description: >
+                    An integer between 0 and 20 specifying the number of most likely
+                    tokens to
+
+                    return at each token position, each with an associated log
+                    probability.
+
+                    `logprobs` must be set to `true` if this parameter is used.
+                  type: integer
+                  minimum: 0
+                  maximum: 20
+                  nullable: true
+                response_format:
+                  description: >
+                    An object specifying the format that the model must output.
+
+
+                    Setting to `{ "type": "json_schema", "json_schema": {...} }`
+                    enables
+
+                    Structured Outputs which ensures the model will match your
+                    supplied JSON
+
+                    schema. Learn more in the [Structured Outputs
+
+                    guide](/docs/guides/structured-outputs).
+
+
+                    Setting to `{ "type": "json_object" }` enables the older JSON
+                    mode, which
+
+                    ensures the message the model generates is valid JSON. Using
+                    `json_schema`
+
+                    is preferred for models that support it.
+                  oneOf:
+                    - $ref: "#/components/schemas/ResponseFormatText"
+                    - $ref: "#/components/schemas/ResponseFormatJsonSchema"
+                    - $ref: "#/components/schemas/ResponseFormatJsonObject"
+                  x-oaiExpandable: true
+                service_tier:
+                  description: >
+                    Specifies the latency tier to use for processing the request.
+                    This parameter is relevant for customers subscribed to the scale
+                    tier service:
+                      - If set to 'auto', and the Project is Scale tier enabled, the system
+                        will utilize scale tier credits until they are exhausted.
+                      - If set to 'auto', and the Project is not Scale tier enabled, the request will be processed using the default service tier with a lower uptime SLA and no latency guarentee.
+                      - If set to 'default', the request will be processed using the default service tier with a lower uptime SLA and no latency guarentee.
+                      - When not set, the default behavior is 'auto'.
+
+                      When this parameter is set, the response body will include the `service_tier` utilized.
+                  type: string
+                  enum:
+                    - auto
+                    - default
+                  nullable: true
+                  default: auto
+                audio:
+                  type: object
+                  nullable: true
+                  description: >
+                    Parameters for audio output. Required when audio output is
+                    requested with
+
+                    `modalities: ["audio"]`. [Learn more](/docs/guides/audio).
+                  required:
+                    - voice
+                    - format
+                  x-oaiExpandable: true
+                  properties:
+                    voice:
+                      type: string
+                      enum:
+                        - alloy
+                        - ash
+                        - ballad
+                        - coral
+                        - echo
+                        - sage
+                        - shimmer
+                        - verse
+                      description: >
+                        The voice the model uses to respond. Supported voices are
+
+                        `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, and
+                        `shimmer`.
+                    format:
+                      type: string
+                      enum:
+                        - wav
+                        - mp3
+                        - flac
+                        - opus
+                        - pcm16
+                      description: >
+                        Specifies the output audio format. Must be one of `wav`,
+                        `mp3`, `flac`,
+
+                        `opus`, or `pcm16`.
+                store:
+                  type: boolean
+                  default: false
+                  nullable: true
+                  description: >
+                    Whether or not to store the output of this chat completion
+                    request for
+
+                    use in our [model distillation](/docs/guides/distillation) or
+
+                    [evals](/docs/guides/evals) products.
+                stream:
+                  description: >
+                    If set to true, the model response data will be streamed to the
+                    client
+
+                    as it is generated using [server-sent
+                    events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format).
+
+                    See the [Streaming section
+                    below](/docs/api-reference/chat/streaming)
+
+                    for more information, along with the [streaming
+                    responses](/docs/guides/streaming-responses)
+
+                    guide for more information on how to handle the streaming
+                    events.
+                  type: boolean
+                  nullable: true
+                  default: false
+                stop:
+                  $ref: "#/components/schemas/StopConfiguration"
+                logit_bias:
+                  type: object
+                  x-oaiTypeLabel: map
+                  default: null
+                  nullable: true
+                  additionalProperties:
+                    type: integer
+                  description: >
+                    Modify the likelihood of specified tokens appearing in the
+                    completion.
+
+
+                    Accepts a JSON object that maps tokens (specified by their token
+                    ID in the
+
+                    tokenizer) to an associated bias value from -100 to 100.
+                    Mathematically,
+
+                    the bias is added to the logits generated by the model prior to
+                    sampling.
+
+                    The exact effect will vary per model, but values between -1 and
+                    1 should
+
+                    decrease or increase likelihood of selection; values like -100
+                    or 100
+
+                    should result in a ban or exclusive selection of the relevant
+                    token.
+                logprobs:
+                  description: >
+                    Whether to return log probabilities of the output tokens or not.
+                    If true,
+
+                    returns the log probabilities of each output token returned in
+                    the
+
+                    `content` of `message`.
+                  type: boolean
+                  default: false
+                  nullable: true
+                max_tokens:
+                  description: >
+                    The maximum number of [tokens](/tokenizer) that can be generated
+                    in the
+
+                    chat completion. This value can be used to control
+
+                    [costs](https://openai.com/api/pricing/) for text generated via
+                    API.
+
+
+                    This value is now deprecated in favor of
+                    `max_completion_tokens`, and is
+
+                    not compatible with [o1 series models](/docs/guides/reasoning).
+                  type: integer
+                  nullable: true
+                  deprecated: true
+                n:
+                  type: integer
+                  minimum: 1
+                  maximum: 128
+                  default: 1
+                  example: 1
+                  nullable: true
+                  description: How many chat completion choices to generate for each input
+                    message. Note that you will be charged based on the number of
+                    generated tokens across all of the choices. Keep `n` as `1` to
+                    minimize costs.
+                prediction:
+                  nullable: true
+                  x-oaiExpandable: true
+                  description: >
+                    Configuration for a [Predicted
+                    Output](/docs/guides/predicted-outputs),
+
+                    which can greatly improve response times when large parts of the
+                    model
+
+                    response are known ahead of time. This is most common when you
+                    are
+
+                    regenerating a file with only minor changes to most of the
+                    content.
+                  oneOf:
+                    - $ref: "#/components/schemas/PredictionContent"
+                seed:
+                  type: integer
+                  minimum: -9223372036854776000
+                  maximum: 9223372036854776000
+                  nullable: true
+                  description: >
+                    This feature is in Beta.
+
+                    If specified, our system will make a best effort to sample
+                    deterministically, such that repeated requests with the same
+                    `seed` and parameters should return the same result.
+
+                    Determinism is not guaranteed, and you should refer to the
+                    `system_fingerprint` response parameter to monitor changes in
+                    the backend.
+                  x-oaiMeta:
+                    beta: true
+                stream_options:
+                  $ref: "#/components/schemas/ChatCompletionStreamOptions"
+                tools:
+                  type: array
+                  description: >
+                    A list of tools the model may call. Currently, only functions
+                    are supported as a tool. Use this to provide a list of functions
+                    the model may generate JSON inputs for. A max of 128 functions
+                    are supported.
+                  items:
+                    $ref: "#/components/schemas/ChatCompletionTool"
+                tool_choice:
+                  $ref: "#/components/schemas/ChatCompletionToolChoiceOption"
+                parallel_tool_calls:
+                  $ref: "#/components/schemas/ParallelToolCalls"
+                function_call:
+                  deprecated: true
+                  description: >
+                    Deprecated in favor of `tool_choice`.
+
+
+                    Controls which (if any) function is called by the model.
+
+
+                    `none` means the model will not call a function and instead
+                    generates a
+
+                    message.
+
+
+                    `auto` means the model can pick between generating a message or
+                    calling a
+
+                    function.
+
+
+                    Specifying a particular function via `{"name": "my_function"}`
+                    forces the
+
+                    model to call that function.
+
+
+                    `none` is the default when no functions are present. `auto` is
+                    the default
+
+                    if functions are present.
+                  oneOf:
+                    - type: string
+                      description: >
+                        `none` means the model will not call a function and instead
+                        generates a message. `auto` means the model can pick between
+                        generating a message or calling a function.
+                      enum:
+                        - none
+                        - auto
+                    - $ref: "#/components/schemas/ChatCompletionFunctionCallOption"
+                  x-oaiExpandable: true
+                functions:
+                  deprecated: true
+                  description: |
+                    Deprecated in favor of `tools`.
+
+                    A list of functions the model may generate JSON inputs for.
+                  type: array
+                  minItems: 1
+                  maxItems: 128
+                  items:
+                    $ref: "#/components/schemas/ChatCompletionFunctions"
+              required:
+                - model
+                - messages
+        """)
+        |> List.first()
+
+      IO.puts("---------------------------------------------------")
+      IO.puts("---------------------------------------------------")
+      IO.puts("---------------------------------------------------")
+      IO.puts("---------------------------------------------------")
+      IO.puts("---------------------------------------------------")
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+      assert parsed == nil
+    end
+
     test "simple component schema" do
       test_schema =
         YamlElixir.read_all_from_string!("""
@@ -356,6 +805,81 @@ defmodule ExOpenAITest do
       parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
 
       assert parsed == expected
+    end
+
+    test "schema with enum" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+      properties:
+        model:
+          type: string
+          enum:
+            - o3-mini
+            - o3-mini-2025-01-31
+            - o1
+            - o1-2024-12-17
+            - gpt-4o
+            - gpt-4o-2024-11-20
+            - gpt-4o-2024-08-06
+            - gpt-4o-2024-05-13
+            - gpt-4o-mini
+            - gpt-4o-mini-2024-07-18
+            - gpt-4-turbo
+          description: The model to use for generating completions
+      required:
+        - model
+        ")
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed == %{
+               description: "",
+               kind: :component,
+               optional_props: [],
+               required_props: [
+                 %{
+                   description: "The model to use for generating completions",
+                   example: "",
+                   name: "model",
+                   type:
+                     {:enum,
+                      [
+                        :"o3-mini",
+                        :"o3-mini-2025-01-31",
+                        :o1,
+                        :"o1-2024-12-17",
+                        :"gpt-4o",
+                        :"gpt-4o-2024-11-20",
+                        :"gpt-4o-2024-08-06",
+                        :"gpt-4o-2024-05-13",
+                        :"gpt-4o-mini",
+                        :"gpt-4o-mini-2024-07-18",
+                        :"gpt-4-turbo"
+                      ]}
+                 }
+               ]
+             }
+    end
+
+    test "schema with multiple anyOfs" do
+      test_schema =
+        YamlElixir.read_all_from_string!(~s"
+     OutputItem:
+       anyOf:
+         - $ref: \"#/components/schemas/OutputMessage\"
+         - $ref: \"#/components/schemas/FileSearchToolCall\"
+         - $ref: \"#/components/schemas/FunctionToolCall\"
+         - $ref: \"#/components/schemas/WebSearchToolCall\"
+         - $ref: \"#/components/schemas/ComputerToolCall\"
+         - $ref: \"#/components/schemas/ReasoningItem\"
+       x-oaiExpandable: true
+       discriminator:
+         propertyName: type
+     ") |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+      assert parsed == nil
     end
 
     test "schema with binary string" do
@@ -646,6 +1170,36 @@ defmodule ExOpenAITest do
                }
              }) == {:object, %{"foo" => {:array, "string"}, "bar" => "number"}}
     end
+
+    test "parse_type with nullable only" do
+      # When we only have a nullable field without type information
+      assert ExOpenAI.Codegen.parse_type(%{"nullable" => true}) == "any"
+
+      # Test in a more complex context - nullable in an object property
+      assert ExOpenAI.Codegen.parse_type(%{
+               "type" => "object",
+               "properties" => %{
+                 "maybe_value" => %{"nullable" => true}
+               }
+             }) == {:object, %{"maybe_value" => "any"}}
+
+      # Test in a component schema context
+      test_schema =
+        YamlElixir.read_all_from_string!(~S"
+          properties:
+            required_field:
+              type: string
+            optional_field:
+              nullable: true
+          required:
+          - required_field
+        ")
+        |> List.first()
+
+      parsed = ExOpenAI.Codegen.parse_component_schema(test_schema)
+
+      assert parsed.optional_props |> Enum.find(&(&1.name == "optional_field")).type == "any"
+    end
   end
 
   describe "parse_path" do
@@ -742,6 +1296,70 @@ defmodule ExOpenAITest do
       }
 
       assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, %{}) == expected
+    end
+
+    test "post with idk yet" do
+      handler_schema =
+        ~S"
+		    post:
+          operationId: createRun
+          tags:
+            - Assistants
+          summary: Create a run.
+          parameters:
+            - in: path
+              name: thread_id
+              required: true
+              schema:
+                type: string
+              description: The ID of the thread to run.
+            - name: include[]
+              in: query
+              description: >
+                A list of additional fields to include in the response. Currently
+                the only supported value is
+                `step_details.tool_calls[*].file_search.results[*].content` to fetch
+                the file search result content.
+
+
+                See the [file search tool
+                documentation](/docs/assistants/tools/file-search#customizing-file-search-settings)
+                for more information.
+              schema:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - step_details.tool_calls[*].file_search.results[*].content
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CreateRunRequest'
+          responses:
+            '200':
+              description: OK
+              content:
+                application/json:
+                  schema:
+                    $ref: '#/components/schemas/RunObject'"
+        |> YamlElixir.read_all_from_string!()
+        |> List.first()
+
+      comp_mapping = %{
+        "CreateSearchRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "foo" => %{
+              "type" => "string"
+            }
+          }
+        }
+      }
+
+      assert ExOpenAI.Codegen.parse_path("/foo/${engine_id}", handler_schema, comp_mapping) ==
+               true
     end
 
     test "post path with request component" do
