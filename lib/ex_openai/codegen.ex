@@ -458,16 +458,17 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  # enums are parsed into anyOf types since that's basically what they are
   def parse_component_schema(%{"enum" => enum, "type" => "string"} = schema) do
-    # Handle string enum components
-    description = Map.get(schema, "description", "")
+    converted_enums =
+      parse_type(%{"type" => "string", "enum" => enum})
 
     %{
-      description: description,
-      kind: :enum,
-      enum: enum,
-      type: "string",
-      required_props: [],
+      kind: :oneOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: converted_enums,
+      description: Map.get(schema, "description", ""),
+      required_props: Map.get(schema, "required", []),
       optional_props: []
     }
   end
@@ -478,6 +479,7 @@ defmodule ExOpenAI.Codegen do
       kind: :oneOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
       components: parse_property(args) |> Map.get(:type) |> elem(1),
+      description: Map.get(args, "description", ""),
       required_props: [],
       optional_props: []
     }
@@ -791,10 +793,11 @@ defmodule ExOpenAI.Codegen do
         Map.put(acc, name, parse_component_schema(value))
       end)
 
-    component_mapping = Enum.map(component_mapping, fn comp ->
-     finalize_schema(comp, component_mapping)
-    end)
-    |> Enum.reduce(%{}, fn {key, val}, acc -> Map.put(acc, key, val) end)
+    component_mapping =
+      Enum.map(component_mapping, fn comp ->
+        finalize_schema(comp, component_mapping)
+      end)
+      |> Enum.reduce(%{}, fn {key, val}, acc -> Map.put(acc, key, val) end)
 
     # iterate through all URL pathes and generate a normalized map
     # eg path = /assistants/{xxx}
@@ -831,6 +834,16 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("oneOf"), do: quote(do: any())
   def type_to_spec("allOf"), do: quote(do: any())
   def type_to_spec("anyOf"), do: quote(do: any())
+
+  def type_to_spec({:oneOf, {:enum, keys}}) do
+    keys
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
+  def type_to_spec({:anyOf, {:enum, keys}}) do
+    keys
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
 
   def type_to_spec({:anyOf, nested}) do
     nested
@@ -920,6 +933,18 @@ defmodule ExOpenAI.Codegen do
     |> String.replace("/tokenizer", "https://platform.openai.com/tokenizer")
   end
 
+  @doc """
+  finalize_schema takes the given component schema and mapping of all components, then "burns" a final schema with all embedded schemas resolved
+  For example, if a schema has a :allOf type (meaning it requires ALL properties of all embedded schemas), finalize_schema
+  will recursively traverse the component tree until we're left with a "simple" schema without embedded items
+
+  So, a :allOf of [{:component, 1}, {:component, 2}] will turn into %{ ... all keys of comp1, ... all keys of comp2}
+  """
+  @type all_components :: %{String.t() => map()}
+
+  @spec finalize_schema({:component, String.t()}, all_components) :: %{
+          optional(atom()) => any()
+        }
   def finalize_schema({:component, target_component_name}, all_components) do
     finalized_sub_schema =
       Map.get(all_components, target_component_name)
