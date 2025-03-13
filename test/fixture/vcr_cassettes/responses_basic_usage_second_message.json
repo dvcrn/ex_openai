@@ -1,0 +1,70 @@
+[
+  {
+    "request": {
+      "options": [],
+      "body": "{\"input\":\"Please tell me what I asked you to do in my previous message ok??\",\"model\":\"gpt-4o-mini\",\"previous_response_id\":\"resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523\"}",
+      "url": "https://api.openai.com/v1/responses?",
+      "headers": {
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "request_body": "",
+      "method": "post"
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"resp_67d2afcfd41081929d3cbe871a7645580d257b2afabb8523\",\n  \"object\": \"response\",\n  \"created_at\": 1741860815,\n  \"status\": \"completed\",\n  \"error\": null,\n  \"incomplete_details\": null,\n  \"instructions\": null,\n  \"max_output_tokens\": null,\n  \"model\": \"gpt-4o-mini-2024-07-18\",\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_67d2afd082b88192ae5b90ff477c7ec50d257b2afabb8523\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"You asked me to tell you a joke. Would you like to hear another one?\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"parallel_tool_calls\": true,\n  \"previous_response_id\": \"resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523\",\n  \"reasoning\": {\n    \"effort\": null,\n    \"generate_summary\": null\n  },\n  \"store\": true,\n  \"temperature\": 1.0,\n  \"text\": {\n    \"format\": {\n      \"type\": \"text\"\n    }\n  },\n  \"tool_choice\": \"auto\",\n  \"tools\": [],\n  \"top_p\": 1.0,\n  \"truncation\": \"disabled\",\n  \"usage\": {\n    \"input_tokens\": 70,\n    \"input_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"output_tokens\": 18,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    },\n    \"total_tokens\": 88\n  },\n  \"user\": null,\n  \"metadata\": {}\n}",
+      "headers": {
+        "Date": "Thu, 13 Mar 2025 10:13:36 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1279",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "x-request-id": "req_ed9fab4e4998bd734b895f210346ee82",
+        "openai-processing-ms": "1008",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "cf-cache-status": "DYNAMIC",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "91fac27248aad74f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": [],
+      "body": "",
+      "url": "https://api.openai.com/v1/responses/resp_67d2afcfd41081929d3cbe871a7645580d257b2afabb8523?",
+      "headers": {
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "request_body": "",
+      "method": "get"
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"resp_67d2afcfd41081929d3cbe871a7645580d257b2afabb8523\",\n  \"object\": \"response\",\n  \"created_at\": 1741860815,\n  \"status\": \"completed\",\n  \"error\": null,\n  \"incomplete_details\": null,\n  \"instructions\": null,\n  \"max_output_tokens\": null,\n  \"model\": \"gpt-4o-mini-2024-07-18\",\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_67d2afd082b88192ae5b90ff477c7ec50d257b2afabb8523\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"You asked me to tell you a joke. Would you like to hear another one?\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"parallel_tool_calls\": true,\n  \"previous_response_id\": \"resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523\",\n  \"reasoning\": {\n    \"effort\": null,\n    \"generate_summary\": null\n  },\n  \"store\": true,\n  \"temperature\": 1.0,\n  \"text\": {\n    \"format\": {\n      \"type\": \"text\"\n    }\n  },\n  \"tool_choice\": \"auto\",\n  \"tools\": [],\n  \"top_p\": 1.0,\n  \"truncation\": \"disabled\",\n  \"usage\": {\n    \"input_tokens\": 70,\n    \"input_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"output_tokens\": 18,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    },\n    \"total_tokens\": 88\n  },\n  \"user\": null,\n  \"metadata\": {}\n}",
+      "headers": {
+        "Date": "Thu, 13 Mar 2025 10:13:37 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1279",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "x-request-id": "req_0e8107c7776d5265f53266763b9d0e18",
+        "openai-processing-ms": "66",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "cf-cache-status": "DYNAMIC",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "91fac279da48d74f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  }
+]

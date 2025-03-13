@@ -1,0 +1,70 @@
+[
+  {
+    "request": {
+      "options": [],
+      "body": "{\"input\":\"tell me a joke\",\"model\":\"gpt-4o-mini\"}",
+      "url": "https://api.openai.com/v1/responses?",
+      "headers": {
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "method": "post",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523\",\n  \"object\": \"response\",\n  \"created_at\": 1741858862,\n  \"status\": \"completed\",\n  \"error\": null,\n  \"incomplete_details\": null,\n  \"instructions\": null,\n  \"max_output_tokens\": null,\n  \"model\": \"gpt-4o-mini-2024-07-18\",\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_67d2a82ea20881929a8fb281c1a95da40d257b2afabb8523\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"Why did the scarecrow win an award? \\n\\nBecause he was outstanding in his field!\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"parallel_tool_calls\": true,\n  \"previous_response_id\": null,\n  \"reasoning\": {\n    \"effort\": null,\n    \"generate_summary\": null\n  },\n  \"store\": true,\n  \"temperature\": 1.0,\n  \"text\": {\n    \"format\": {\n      \"type\": \"text\"\n    }\n  },\n  \"tool_choice\": \"auto\",\n  \"tools\": [],\n  \"top_p\": 1.0,\n  \"truncation\": \"disabled\",\n  \"usage\": {\n    \"input_tokens\": 29,\n    \"input_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"output_tokens\": 19,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    },\n    \"total_tokens\": 48\n  },\n  \"user\": null,\n  \"metadata\": {}\n}",
+      "headers": {
+        "Date": "Thu, 13 Mar 2025 09:41:02 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1240",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "x-request-id": "req_1a29e9c9f1e0c1d4574b10156590edd3",
+        "openai-processing-ms": "680",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "cf-cache-status": "DYNAMIC",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "91fa92c03837d74f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  },
+  {
+    "request": {
+      "options": [],
+      "body": "",
+      "url": "https://api.openai.com/v1/responses/resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523?",
+      "headers": {
+        "Authorization": "***",
+        "Content-type": "application/json"
+      },
+      "method": "get",
+      "request_body": ""
+    },
+    "response": {
+      "binary": false,
+      "type": "ok",
+      "body": "{\n  \"id\": \"resp_67d2a82e377c81929d2d0a90d7be62680d257b2afabb8523\",\n  \"object\": \"response\",\n  \"created_at\": 1741858862,\n  \"status\": \"completed\",\n  \"error\": null,\n  \"incomplete_details\": null,\n  \"instructions\": null,\n  \"max_output_tokens\": null,\n  \"model\": \"gpt-4o-mini-2024-07-18\",\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_67d2a82ea20881929a8fb281c1a95da40d257b2afabb8523\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"Why did the scarecrow win an award? \\n\\nBecause he was outstanding in his field!\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"parallel_tool_calls\": true,\n  \"previous_response_id\": null,\n  \"reasoning\": {\n    \"effort\": null,\n    \"generate_summary\": null\n  },\n  \"store\": true,\n  \"temperature\": 1.0,\n  \"text\": {\n    \"format\": {\n      \"type\": \"text\"\n    }\n  },\n  \"tool_choice\": \"auto\",\n  \"tools\": [],\n  \"top_p\": 1.0,\n  \"truncation\": \"disabled\",\n  \"usage\": {\n    \"input_tokens\": 29,\n    \"input_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"output_tokens\": 19,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    },\n    \"total_tokens\": 48\n  },\n  \"user\": null,\n  \"metadata\": {}\n}",
+      "headers": {
+        "Date": "Thu, 13 Mar 2025 09:41:03 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1240",
+        "Connection": "keep-alive",
+        "openai-version": "2020-10-01",
+        "x-request-id": "req_bd8bf1abb9306e67f25e219ef6a1ed07",
+        "openai-processing-ms": "63",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "cf-cache-status": "DYNAMIC",
+        "X-Content-Type-Options": "nosniff",
+        "Server": "cloudflare",
+        "CF-RAY": "91fa92c64db6d74f-NRT",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "status_code": 200
+    }
+  }
+]
