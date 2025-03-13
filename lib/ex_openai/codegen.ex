@@ -1,4 +1,5 @@
 defmodule ExOpenAI.Codegen do
+  require Logger
   @moduledoc false
 
   # Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
@@ -903,7 +904,7 @@ defmodule ExOpenAI.Codegen do
             String.to_existing_atom(key)
           rescue
             ArgumentError ->
-              IO.puts(
+              Logger.debug(
                 "Warning! Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
               )
 
