@@ -180,12 +180,6 @@ end)
         group: group
       } = fx
 
-      # if String.contains?(function_name, "create_chat_completion") do
-      # IO.puts(function_name)
-      # IO.inspect(fx)
-      #   System.halt()
-      # end
-
       name = String.to_atom(function_name)
 
       content_type =
