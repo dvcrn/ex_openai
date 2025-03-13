@@ -905,7 +905,7 @@ defmodule ExOpenAI.Codegen do
           rescue
             ArgumentError ->
               Logger.debug(
-                "Warning! Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
+                "Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
               )
 
               String.to_atom(key)
@@ -967,6 +967,9 @@ defmodule ExOpenAI.Codegen do
          %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys}},
         all_components
       ) do
+    #
+    #
+    #
     # step 1: Resolve the schema of all nested components
     finalized_schema =
       component_list
@@ -993,8 +996,6 @@ defmodule ExOpenAI.Codegen do
           end)
 
         Map.merge(schema1, %{required_props: required_props, optional_props: optional_props})
-        #
-        # Map.merge(schema1, %{required_props: schema1.required_props ++ schema2.required_props, optional_props: schema1.optional_props ++ schema2.optional_props})
       end)
 
     {name, finalized_schema}
