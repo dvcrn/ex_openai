@@ -228,14 +228,14 @@ defmodule ExOpenAI.Codegen do
 
   def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
 
-  def parse_type(%{"nullable" => nullable, "type" => type} = args) do
+  def parse_type(%{"nullable" => _nullable, "type" => _type} = args) do
     # remove the nullable key first
     Map.drop(args, ["nullable"])
     |> parse_type
   end
 
   # just nullable
-  def parse_type(%{"nullable" => nullable} = args) do
+  def parse_type(%{"nullable" => _nullable} = _args) do
     nil
   end
 
@@ -311,16 +311,6 @@ defmodule ExOpenAI.Codegen do
       type: {:allOf, Enum.map(allOf, fn x -> ExOpenAI.Codegen.parse_type(x) end)}
     }
   end
-
-  # %{
-  #   "default" => "auto",
-  #   "description" =>
-  #     "The number of epochs to train the model for. An epoch refers to one\nfull cycle through the training dataset.\n",
-  #   "oneOf" => [
-  #     %{"enum" => ["auto"], "type" => "string"},
-  #     %{"maximum" => 50, "minimum" => 1, "type" => "integer"}
-  #   ]
-  # }
 
   def parse_property(%{
         "name" => name,
@@ -497,7 +487,7 @@ defmodule ExOpenAI.Codegen do
     {:component, String.replace(ref, "#/components/schemas/", "")}
   end
 
-  def parse_component_schema(%{"allOf" => allOfList} = args) do
+  def parse_component_schema(%{"allOf" => allOfList} = _args) do
     #
     # First pass - resolve all of the sub-components
     resolved_all_of_list =
@@ -615,7 +605,7 @@ defmodule ExOpenAI.Codegen do
 
   # Case for empty response, aka nothing to return
   defp extract_response_type(%{"200" => res200} = res) do
-    newRes =
+    _newRes =
       res
       |> Map.put("200", Map.put(res200, "content", %{"application/json" => %{}}))
 
@@ -957,11 +947,11 @@ defmodule ExOpenAI.Codegen do
   end
 
   def finalize_schema(
-        %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys},
+        %{kind: :allOf, components: component_list, required_prop_keys: _required_prop_keys},
         all_components
       ) do
     # step 1: Resolve the schema of all nested components
-    finalized_schema =
+    _finalized_schema =
       component_list
       |> Enum.map(fn schema ->
         finalize_schema(schema, all_components)
@@ -1009,7 +999,7 @@ defmodule ExOpenAI.Codegen do
     {name, finalized_schema}
   end
 
-  def finalize_schema({name, schema} = comp, _all_components) do
+  def finalize_schema({_name, _schema} = comp, _all_components) do
     comp
   end
 end
