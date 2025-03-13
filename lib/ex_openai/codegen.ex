@@ -236,9 +236,7 @@ defmodule ExOpenAI.Codegen do
 
   # just nullable
   def parse_type(%{"nullable" => nullable} = args) do
-    IO.puts("just nullable nothing else")
-    IO.inspect(args)
-    "any"
+    nil
   end
 
   def parse_type(%{"type" => type}), do: type
@@ -894,6 +892,8 @@ defmodule ExOpenAI.Codegen do
     mod = string_to_component(component) |> Module.split() |> Enum.map(&String.to_atom/1)
     {{:., [], [{:__aliases__, [alias: false], mod}, :t]}, [], []}
   end
+
+  def type_to_spec(i) when is_nil(i), do: nil
 
   # fallbacks
   def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
