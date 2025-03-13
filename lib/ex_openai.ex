@@ -186,7 +186,6 @@ end)
       #   System.halt()
       # end
 
-
       name = String.to_atom(function_name)
 
       content_type =
@@ -199,14 +198,13 @@ end)
         case method do
           # POST methods have body arguments on top of positional URL ones
           :post ->
-            args ++
+            Enum.filter(args, &Map.get(&1, :required?)) ++
               if(is_nil(get_in(fx, [:request_body, :request_schema, :required_props])),
                 do: [],
                 else: fx.request_body.request_schema.required_props
               )
 
           :get ->
-            # IO.inspect(args)
             Enum.filter(args, &Map.get(&1, :required?))
 
           :delete ->
@@ -250,10 +248,14 @@ end)
         |> ExOpenAI.Codegen.add_stream_to_opts_args()
         |> Kernel.++(ExOpenAI.Codegen.extra_opts_args())
 
-        optional_args_docstring =
+      optional_args_docstring =
         Enum.map_join(merged_optional_args, "\n\n", fn i ->
           s = "- `#{i.name}`"
-          s = if Map.has_key?(i, :description), do: "#{s}: #{inspect(Map.get(i, :description))}", else: s
+
+          s =
+            if Map.has_key?(i, :description),
+              do: "#{s}: #{inspect(Map.get(i, :description))}",
+              else: s
 
           s =
             if Map.get(i, :example, "") != "",
