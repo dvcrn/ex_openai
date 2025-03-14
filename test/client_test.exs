@@ -24,7 +24,9 @@ defmodule ExOpenAI.ClientTest do
     test "uses custom base URL when provided" do
       url = "/chat/completions"
       base_url = "https://custom-api.example.com/v1"
-      assert Client.add_base_url(url, base_url) == "https://custom-api.example.com/v1/chat/completions"
+
+      assert Client.add_base_url(url, base_url) ==
+               "https://custom-api.example.com/v1/chat/completions"
     end
   end
 end

@@ -132,6 +132,23 @@ defmodule ExOpenAI.Codegen do
     end
   end
 
+  @type component_ref :: {:component, String.t()}
+  @type object_type :: {:object, map()}
+  @type array_type :: {:array, any()}
+  @type enum_type :: {:enum, list(atom())}
+  @type oneOf_type :: {:oneOf, list(any())}
+  @type anyOf_type :: {:anyOf, list(any())}
+  @type parsed_type ::
+          component_ref
+          | object_type
+          | array_type
+          | enum_type
+          | oneOf_type
+          | anyOf_type
+          | String.t()
+          | nil
+          | atom()
+
   @doc """
   Parses the given component type, returns a flattened representation of that type
 
@@ -153,6 +170,7 @@ defmodule ExOpenAI.Codegen do
   }) == {:object, %{"foo" => {:array, "string"}, "bar" => "number"}}
   ```
   """
+  @spec parse_type(%{required(String.t()) => any()}) :: parsed_type
   def parse_type(%{
         "type" => "object",
         "properties" => properties
@@ -179,10 +197,12 @@ defmodule ExOpenAI.Codegen do
     {:object, parsed_obj}
   end
 
+  @spec parse_type(%{required(String.t()) => String.t()}) :: component_ref
   def parse_type(%{"$ref" => ref} = _args) do
     {:component, String.replace(ref, "#/components/schemas/", "")}
   end
 
+  @spec parse_type(%{required(String.t()) => list()}) :: anyOf_type
   def parse_type(%{"anyOf" => anyOf}) do
     {:anyOf,
      Enum.map(anyOf, fn x ->
@@ -190,6 +210,7 @@ defmodule ExOpenAI.Codegen do
      end)}
   end
 
+  @spec parse_type(%{required(String.t()) => list()}) :: oneOf_type
   def parse_type(%{"oneOf" => oneOf}) do
     {:oneOf,
      Enum.map(oneOf, fn x ->
@@ -197,6 +218,8 @@ defmodule ExOpenAI.Codegen do
      end)}
   end
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => map()}) ::
+          array_type
   def parse_type(%{
         "type" => "array",
         "items" => items
@@ -224,11 +247,18 @@ defmodule ExOpenAI.Codegen do
     |> (&{:array, &1}).()
   end
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => list(String.t())}) ::
+          enum_type
+
   def parse_type(%{"type" => "string", "enum" => enum_entries}),
     do: {:enum, Enum.map(enum_entries, &String.to_atom/1)}
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => String.t()}) ::
+          String.t()
   def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
 
+  @spec parse_type(%{required(String.t()) => any(), required(String.t()) => String.t()} | map()) ::
+          parsed_type
   def parse_type(%{"nullable" => _nullable, "type" => _type} = args) do
     # remove the nullable key first
     Map.drop(args, ["nullable"])
@@ -236,11 +266,21 @@ defmodule ExOpenAI.Codegen do
   end
 
   # just nullable
+  @spec parse_type(%{required(String.t()) => any()}) :: nil
   def parse_type(%{"nullable" => _nullable} = _args) do
     nil
   end
 
+  @spec parse_type(%{required(String.t()) => String.t()}) :: String.t()
   def parse_type(%{"type" => type}), do: type
+
+  # Add this to your code to see what's happening
+  @spec parse_type(any()) :: String.t()
+  def parse_type(unknown) do
+    IO.inspect(unknown, label: "Unknown type structure")
+    # Default fallback
+    "any"
+  end
 
   def parse_property(
         %{
@@ -463,11 +503,19 @@ defmodule ExOpenAI.Codegen do
   end
 
   # Handling for when the component isn't a full component by it's own, but instead embeds other components
-  def parse_component_schema(%{"oneOf" => _oneOf} = args) do
+  def parse_component_schema(%{"oneOf" => oneOf} = args) do
+    components =
+      oneOf
+      |> Enum.map(fn item -> parse_type(item) end)
+      |> Enum.map(fn
+        {:component, ref} -> {:component, ref}
+        other -> other
+      end)
+
     %{
       kind: :oneOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
-      components: parse_property(args) |> Map.get(:type) |> elem(1),
+      components: components,
       description: Map.get(args, "description", ""),
       required_props: [],
       optional_props: []
@@ -579,6 +627,11 @@ defmodule ExOpenAI.Codegen do
     )
   end
 
+  @type response_schema :: %{String.t() => any()}
+  @type one_of_type :: {:oneOf, list({:component, String.t()})}
+  @type response_type :: atom() | component_ref | one_of_type | nil
+
+  @spec extract_response_type(%{required(String.t()) => map()}) :: response_type
   defp extract_response_type(%{"200" => %{"content" => content}}) do
     content
     # [["application/json", %{}]]
@@ -605,14 +658,9 @@ defmodule ExOpenAI.Codegen do
   end
 
   # Case for empty response, aka nothing to return
-  defp extract_response_type(%{"200" => res200} = res) do
-    _newRes =
-      res
-      |> Map.put("200", Map.put(res200, "content", %{"application/json" => %{}}))
-
+  @spec extract_response_type(%{required(String.t()) => map()}) :: nil
+  defp extract_response_type(%{"200" => _res200} = _res) do
     nil
-
-    # extract_response_type(newRes)
   end
 
   def filter_arguments_by_location(arguments, location) do
@@ -620,6 +668,20 @@ defmodule ExOpenAI.Codegen do
     |> Enum.filter(fn arg -> arg.in == location end)
   end
 
+  @spec parse_path(any(), any(), any()) ::
+          nil
+          | %{
+              :arguments => list(),
+              :deprecated? => boolean(),
+              :endpoint => binary(),
+              :group => binary(),
+              :method => :delete | :get | :post,
+              :name => binary(),
+              :response_type => response_type,
+              :summary => any(),
+              optional(:request_body) =>
+                nil | %{content_type: atom(), request_schema: any(), required?: any()}
+            }
   @doc """
   Parses a given "path". A path is what is mapped under the "paths" key of the OpenAI openapi docs, and represents an API endpoint (GET, POST, DELETE, PUT)
 
@@ -686,21 +748,12 @@ defmodule ExOpenAI.Codegen do
         },
         component_mapping
       ) do
-    # Get all parameters
-    # all_parameters = Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1))
-
-    # # Extract path parameters and query parameters separately
-    # path_parameters = filter_arguments_by_location(all_parameters, "path")
-    # query_parameters = filter_arguments_by_location(all_parameters, "query")
-
     %{
       endpoint: path,
       name: Macro.underscore(id),
       summary: summary,
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
-      # path_parameters: path_parameters,
-      # query_parameters: query_parameters,
       method: :post,
       request_body: parse_request_body(body, component_mapping),
       group: extract_group_from_url(path),
@@ -771,6 +824,7 @@ defmodule ExOpenAI.Codegen do
     nil
   end
 
+  @spec get_documentation() :: %{components: any(), functions: list()}
   def get_documentation do
     {:ok, yml} =
       File.read!("#{__DIR__}/docs/docs.yaml")
@@ -933,9 +987,7 @@ defmodule ExOpenAI.Codegen do
   """
   @type all_components :: %{String.t() => map()}
 
-  @spec finalize_schema({:component, String.t()}, all_components) :: %{
-          optional(atom()) => any()
-        }
+  @spec finalize_schema({:component, String.t()}, all_components) :: all_components()
   def finalize_schema({:component, target_component_name}, all_components) do
     finalized_sub_schema =
       Map.get(all_components, target_component_name)
@@ -945,6 +997,18 @@ defmodule ExOpenAI.Codegen do
 
   def finalize_schema(%{kind: :component} = schema, _all_comps) do
     schema
+  end
+
+  def finalize_schema({:oneOf, components}, all_components) do
+    finalized_components =
+      Enum.map(components, fn component ->
+        case component do
+          {:component, ref} -> finalize_schema({:component, ref}, all_components)
+          other -> finalize_schema(other, all_components)
+        end
+      end)
+
+    {:oneOf, finalized_components}
   end
 
   def finalize_schema(
@@ -962,6 +1026,7 @@ defmodule ExOpenAI.Codegen do
       end)
   end
 
+  @dialyzer {:nowarn_function, finalize_schema: 2}
   def finalize_schema(
         {name,
          %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys}},
@@ -997,6 +1062,9 @@ defmodule ExOpenAI.Codegen do
 
     {name, finalized_schema}
   end
+
+  # Add this clause to handle nil values
+  def finalize_schema(nil, _all_components), do: nil
 
   def finalize_schema({_name, _schema} = comp, _all_components) do
     comp
