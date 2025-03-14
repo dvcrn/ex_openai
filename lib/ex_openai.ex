@@ -136,7 +136,7 @@ end)
 
         @moduledoc "#{docstring_head}
 
-				Use any of these components: #{inspect(component.components)}"
+				Use any of these components: #{inspect(component.components |> Enum.map(&Kernel.elem(&1, 1)))}"
     end
 
     use ExOpenAI.Codegen.AstUnpacker

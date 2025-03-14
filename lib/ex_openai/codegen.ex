@@ -633,27 +633,46 @@ defmodule ExOpenAI.Codegen do
 
   @spec extract_response_type(%{required(String.t()) => map()}) :: response_type
   defp extract_response_type(%{"200" => %{"content" => content}}) do
-    content
-    # [["application/json", %{}]]
-    |> Map.to_list()
-    # ["application/json", %{}]
-    |> List.first()
-    # %{}
-    |> Kernel.elem(1)
-    |> Map.get("schema")
-    |> case do
-      # no ref
-      %{"type" => type} ->
-        String.to_atom(type)
+    return_types =
+      content
+      # [["application/json", %{}]]
+      |> Map.to_list()
 
-      %{"$ref" => ref} ->
-        {:component, String.replace(ref, "#/components/schemas/", "")}
+      # iterate over all the items, which can be multiple
+      # application/json:
+      # 	schema:
+      # 		$ref: "#/components/schemas/Response"
+      # text/event-stream:
+      # 	schema:
+      # 		$ref: "#/components/schemas/ResponseStreamEvent"
+      |> Enum.map(fn {_content_type, %{} = content} ->
+        # IO.inspect(content, label: "Content")
+        # IO.inspect(content_type, label: "Content type")
+        content
+        |> Map.get("schema")
+        |> case do
+          %{"$ref" => ref} ->
+            {:component, String.replace(ref, "#/components/schemas/", "")}
 
-      %{"oneOf" => list} ->
-        {:oneOf,
-         Enum.map(list, fn %{"$ref" => ref} ->
-           {:component, String.replace(ref, "#/components/schemas/", "")}
-         end)}
+          %{"type" => type} ->
+            String.to_atom(type)
+
+          %{"oneOf" => list} ->
+            {:oneOf,
+             Enum.map(list, fn %{"$ref" => ref} ->
+               {:component, String.replace(ref, "#/components/schemas/", "")}
+             end)}
+        end
+      end)
+
+    # if return_types is more than one, we'll squash them together into a oneOf type
+    # otherwise just return the first one
+    case return_types do
+      [first] ->
+        first
+
+      _ ->
+        {:oneOf, return_types}
     end
   end
 
@@ -1070,9 +1089,35 @@ defmodule ExOpenAI.Codegen do
     comp
   end
 
+  @doc """
+  Helper function to convert the response from the API into the type that the function is expected to return.
+
+  Takes the response and the expected response type, and converts the response into the expected type if they match.
+  If no keys match, the response is returned as is (as a map instead of a struct).
+
+  ## Behavior Details
+
+  * Handles responses with different patterns, including those with "response" and "type" keys
+  * Processes reference types directly (when `is_reference(ref)` is true)
+  * Converts responses to component structs when the response structure matches a component
+  * Handles `oneOf` type responses by finding the best matching component based on key matching
+  * Uses a key-matching algorithm to determine the most appropriate struct to convert to
+  * For components, counts how many keys in the response match the component's struct keys
+  * For `oneOf` types, tries each possible component and selects the one with the most matching keys
+  * Returns the original response when no conversion is needed or possible
+  * Preserves error tuples, passing them through unchanged
+
+  ## Return Values
+
+  * `{:ok, converted_value}` for successful conversions
+  * Original error tuples are passed through unchanged
+  """
+  def convert_response({:ok, %{"response" => res, "type" => _t}}, response_type) do
+    convert_response({:ok, res}, response_type)
+  end
+
   @spec convert_response({:ok, any()} | {:error, any()}, response_type) ::
           {:ok, any()} | {:error, any()}
-  @doc "Helper function to convert the response from the API into the type that the function is expected to return"
   def convert_response(response, response_type) do
     case response do
       {:ok, ref} when is_reference(ref) ->
@@ -1085,32 +1130,71 @@ defmodule ExOpenAI.Codegen do
             # getting allocated. otherwise later usage of keys_to_atom will fail
             ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
 
-            # todo: this is not recursive yet, so nested values won't be correctly identified as struct
-            # although the typespec is already recursive, so there can be cases where
-            # the typespec says a struct is nested, but there isn't
-            {:ok,
-             struct(
-               ExOpenAI.Codegen.string_to_component(comp),
-               ExOpenAI.Codegen.keys_to_atoms(res)
-             )}
+            keys =
+              ExOpenAI.Codegen.string_to_component(comp).__struct__()
+              |> Map.keys()
+
+            # get the number of matching keys
+            matching_keys =
+              res
+              |> keys_to_atoms()
+              |> Map.keys()
+              |> Enum.filter(fn key -> key in keys end)
+              |> length()
+
+            case matching_keys do
+              0 ->
+                {:ok, res}
+
+              _ ->
+                # todo: this is not recursive yet, so nested values won't be correctly identified as struct
+                # although the typespec is already recursive, so there can be cases where
+                # the typespec says a struct is nested, but there isn't
+                {:ok,
+                 struct(
+                   ExOpenAI.Codegen.string_to_component(comp),
+                   ExOpenAI.Codegen.keys_to_atoms(res)
+                 )}
+            end
 
           # handling for oneOf, aka a list of potential types that the response can have
           # since we don't know exactly which it is, we can try to convert it to the first one
           {:oneOf, comps} when is_list(comps) ->
-            # find if we have a component in the list
-            found_comp =
-              comps
-              |> Enum.find(fn
-                {:component, _} -> true
-                _ -> false
-              end)
+            # get number of matching keys for each comp
+            # this is a bit of a hack, but it works
+            matching_struct =
+              Enum.map(comps, fn
+                {:component, comp} ->
+                  # get the keys of the component
+                  keys =
+                    ExOpenAI.Codegen.string_to_component(comp).__struct__()
+                    |> Map.keys()
+                    |> IO.inspect()
 
-            case found_comp do
+                  # get the number of matching keys
+                  matching_keys =
+                    res
+                    |> keys_to_atoms()
+                    |> Map.keys()
+                    |> Enum.filter(fn key -> key in keys end)
+                    |> length()
+
+                  {comp, matching_keys}
+
+                _ ->
+                  nil
+              end)
+              # sort by the number of matching keys
+              |> Enum.sort_by(fn {_comp, matching_keys} -> matching_keys end, :desc)
+              # filter all with 0
+              |> Enum.filter(fn {_comp, matching_keys} -> matching_keys > 0 end)
+              |> List.first()
+
+            case matching_struct do
               nil ->
                 {:ok, res}
 
-              found_comp ->
-                {:component, comp} = found_comp
+              {comp, _keys} ->
                 ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
 
                 {:ok,

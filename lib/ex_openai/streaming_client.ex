@@ -57,51 +57,6 @@ defmodule ExOpenAI.StreamingClient do
     callback_fx.(data)
   end
 
-  defp parse_lines(lines, state) do
-    # The last element might be incomplete JSON, which we keep.
-    # Everything that is valid JSON, we forward immediately.
-    {remaining_buffer, updated_state} =
-      Enum.reduce(lines, {"", state}, fn line, {partial_acc, st} ->
-        # Reconstruct the current attempt: partial data + the current line
-        attempt = (partial_acc <> line) |> String.trim()
-
-        cond do
-          attempt == "[DONE]" ->
-            Logger.debug("Received [DONE]")
-            forward_response(st.stream_to, :finish)
-            {"", st}
-
-          attempt == "" ->
-            # Possibly just an empty line or leftover
-            {"", st}
-
-          true ->
-            # Attempt to parse
-            case Jason.decode(attempt) do
-              {:ok, decoded} ->
-                # Once successfully decoded, forward, and reset partial buffer
-                case st.convert_response_fx.({:ok, decoded}) do
-                  {:ok, message} ->
-                    forward_response(st.stream_to, {:data, message})
-
-                  e ->
-                    Logger.warning(
-                      "Something went wrong trying to decode the response: #{inspect(e)}"
-                    )
-                end
-
-                {"", st}
-
-              {:error, _} ->
-                # Not valid JSON yet; treat entire attempt as partial
-                {attempt, st}
-            end
-        end
-      end)
-
-    {remaining_buffer, updated_state}
-  end
-
   def handle_chunk(
         chunk,
         %{stream_to: pid_or_fx, convert_response_fx: convert_fx}
@@ -166,21 +121,59 @@ defmodule ExOpenAI.StreamingClient do
     # Combine the existing buffer with the new chunk
     new_buffer = state.buffer <> chunk
 
-    # Split by "data:" lines, but be mindful of partial JSON
-    lines =
-      new_buffer
-      |> String.replace(": OPENROUTER PROCESSING\n\n", "")
-      |> String.split(~r/data: /)
+    # Process SSE format properly
+    # First split by double newlines which separate SSE messages
+    sse_messages = String.split(new_buffer, "\n\n")
 
-    # The first chunk might still hold partial data from the end
-    # or the last chunk might be partial data at the end.
+    # The last element might be incomplete, so we'll keep it as buffer
+    {messages, incomplete_buffer} =
+      case sse_messages do
+        [] ->
+          {[], ""}
 
-    # We'll need a function that attempts to parse each line. If it fails, we store
-    # that line back to the buffer for the next chunk.
-    {remaining_buffer, state_after_parse} = parse_lines(lines, state)
+        messages ->
+          last_idx = length(messages) - 1
+          {Enum.take(messages, last_idx), Enum.at(messages, last_idx, "")}
+      end
+
+    # Process each complete SSE message
+    state_after_parse =
+      Enum.reduce(messages, state, fn message, st ->
+        if String.trim(message) == "" do
+          st
+        else
+          # Parse the SSE message
+          message_parts = String.split(message, "\n")
+
+          # Extract event type and data
+          {event_type, data} = extract_sse_parts(message_parts)
+
+          case event_type do
+            "response.created" ->
+              process_sse_data(data, st)
+
+            "response.in_progress" ->
+              process_sse_data(data, st)
+
+            "response.final" ->
+              process_sse_data(data, st)
+
+            "response.completed" ->
+              process_sse_data(data, st)
+
+            "[DONE]" ->
+              forward_response(st.stream_to, :finish)
+              st
+
+            _ ->
+              # Unknown event type, try to process data anyway
+              process_sse_data(data, st)
+          end
+        end
+      end)
 
     # Update the buffer in the new state
-    new_state = %{state_after_parse | buffer: remaining_buffer}
+    new_state = %{state_after_parse | buffer: incomplete_buffer}
     {:noreply, new_state}
   end
 
@@ -217,5 +210,52 @@ defmodule ExOpenAI.StreamingClient do
   def handle_info(info, state) do
     Logger.debug("Unhandled info: #{inspect(info)}")
     {:noreply, state}
+  end
+
+  # Helper function to extract event type and data from SSE message parts
+  defp extract_sse_parts(message_parts) do
+    Enum.reduce(message_parts, {nil, nil}, fn part, {event, data} ->
+      cond do
+        String.starts_with?(part, "event: ") ->
+          {String.replace_prefix(part, "event: ", ""), data}
+
+        String.starts_with?(part, "data: ") ->
+          {event, String.replace_prefix(part, "data: ", "")}
+
+        true ->
+          {event, data}
+      end
+    end)
+  end
+
+  # Process the data part of an SSE message
+  defp process_sse_data(nil, state), do: state
+
+  defp process_sse_data(data, state) do
+    case data do
+      "[DONE]" ->
+        forward_response(state.stream_to, :finish)
+        state
+
+      _ ->
+        case Jason.decode(data) do
+          {:ok, decoded} ->
+            case state.convert_response_fx.({:ok, decoded}) do
+              {:ok, message} ->
+                forward_response(state.stream_to, {:data, message})
+
+              e ->
+                Logger.warning(
+                  "Something went wrong trying to decode the response: #{inspect(e)}"
+                )
+            end
+
+            state
+
+          {:error, _} ->
+            Logger.warning("Received something that isn't valid JSON in stream: #{inspect(data)}")
+            state
+        end
+    end
   end
 end
