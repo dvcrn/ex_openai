@@ -1,4 +1,5 @@
 defmodule ExOpenAI.Codegen do
+  require Logger
   @moduledoc false
 
   # Codegeneration helpers for parsing the OpenAI openapi documentation and converting it into something easy to work with
@@ -87,8 +88,7 @@ defmodule ExOpenAI.Codegen do
         type: "string"
       },
       %{
-        description:
-          "Which API endpoint to use as base, defaults to https://api.openai.com/v1",
+        description: "Which API endpoint to use as base, defaults to https://api.openai.com/v1",
         example: "",
         name: "base_url",
         type: "string"
@@ -132,6 +132,23 @@ defmodule ExOpenAI.Codegen do
     end
   end
 
+  @type component_ref :: {:component, String.t()}
+  @type object_type :: {:object, map()}
+  @type array_type :: {:array, any()}
+  @type enum_type :: {:enum, list(atom())}
+  @type oneOf_type :: {:oneOf, list(any())}
+  @type anyOf_type :: {:anyOf, list(any())}
+  @type parsed_type ::
+          component_ref
+          | object_type
+          | array_type
+          | enum_type
+          | oneOf_type
+          | anyOf_type
+          | String.t()
+          | nil
+          | atom()
+
   @doc """
   Parses the given component type, returns a flattened representation of that type
 
@@ -153,6 +170,7 @@ defmodule ExOpenAI.Codegen do
   }) == {:object, %{"foo" => {:array, "string"}, "bar" => "number"}}
   ```
   """
+  @spec parse_type(%{required(String.t()) => any()}) :: parsed_type
   def parse_type(%{
         "type" => "object",
         "properties" => properties
@@ -179,10 +197,12 @@ defmodule ExOpenAI.Codegen do
     {:object, parsed_obj}
   end
 
+  @spec parse_type(%{required(String.t()) => String.t()}) :: component_ref
   def parse_type(%{"$ref" => ref} = _args) do
     {:component, String.replace(ref, "#/components/schemas/", "")}
   end
 
+  @spec parse_type(%{required(String.t()) => list()}) :: anyOf_type
   def parse_type(%{"anyOf" => anyOf}) do
     {:anyOf,
      Enum.map(anyOf, fn x ->
@@ -190,6 +210,7 @@ defmodule ExOpenAI.Codegen do
      end)}
   end
 
+  @spec parse_type(%{required(String.t()) => list()}) :: oneOf_type
   def parse_type(%{"oneOf" => oneOf}) do
     {:oneOf,
      Enum.map(oneOf, fn x ->
@@ -197,6 +218,8 @@ defmodule ExOpenAI.Codegen do
      end)}
   end
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => map()}) ::
+          array_type
   def parse_type(%{
         "type" => "array",
         "items" => items
@@ -224,12 +247,40 @@ defmodule ExOpenAI.Codegen do
     |> (&{:array, &1}).()
   end
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => list(String.t())}) ::
+          enum_type
+
   def parse_type(%{"type" => "string", "enum" => enum_entries}),
     do: {:enum, Enum.map(enum_entries, &String.to_atom/1)}
 
+  @spec parse_type(%{required(String.t()) => String.t(), required(String.t()) => String.t()}) ::
+          String.t()
   def parse_type(%{"type" => "string", "format" => "binary"}), do: "bitstring"
 
+  @spec parse_type(%{required(String.t()) => any(), required(String.t()) => String.t()} | map()) ::
+          parsed_type
+  def parse_type(%{"nullable" => _nullable, "type" => _type} = args) do
+    # remove the nullable key first
+    Map.drop(args, ["nullable"])
+    |> parse_type
+  end
+
+  # just nullable
+  @spec parse_type(%{required(String.t()) => any()}) :: nil
+  def parse_type(%{"nullable" => _nullable} = _args) do
+    nil
+  end
+
+  @spec parse_type(%{required(String.t()) => String.t()}) :: String.t()
   def parse_type(%{"type" => type}), do: type
+
+  # Add this to your code to see what's happening
+  @spec parse_type(any()) :: String.t()
+  def parse_type(unknown) do
+    IO.inspect(unknown, label: "Unknown type structure")
+    # Default fallback
+    "any"
+  end
 
   def parse_property(
         %{
@@ -302,16 +353,6 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  # %{
-  #   "default" => "auto",
-  #   "description" =>
-  #     "The number of epochs to train the model for. An epoch refers to one\nfull cycle through the training dataset.\n",
-  #   "oneOf" => [
-  #     %{"enum" => ["auto"], "type" => "string"},
-  #     %{"maximum" => 50, "minimum" => 1, "type" => "integer"}
-  #   ]
-  # }
-
   def parse_property(%{
         "name" => name,
         "description" => desc,
@@ -348,6 +389,18 @@ defmodule ExOpenAI.Codegen do
       # optional
       description: Map.get(args, "description", ""),
       # optional
+      example: Map.get(args, "example", "")
+    }
+  end
+
+  # TODO: this needs fixing
+  # Handle the case where we have items but no explicit type (assume array)
+  def parse_property(%{"items" => items, "name" => name, "description" => description} = args)
+      when is_map(items) do
+    %{
+      type: {:array, parse_type(items)},
+      name: name,
+      description: description,
       example: Map.get(args, "example", "")
     }
   end
@@ -422,8 +475,54 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
+  def parse_component_schema(%{"additionalProperties" => _, "type" => "object"} = schema) do
+    # Handle objects with additionalProperties but no properties
+    description = Map.get(schema, "description", "")
+
+    %{
+      description: description,
+      kind: :component,
+      required_props: [],
+      optional_props: []
+    }
+  end
+
+  # enums are parsed into anyOf types since that's basically what they are
+  def parse_component_schema(%{"enum" => enum, "type" => "string"} = schema) do
+    converted_enums =
+      parse_type(%{"type" => "string", "enum" => enum})
+
+    %{
+      kind: :oneOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: converted_enums,
+      description: Map.get(schema, "description", ""),
+      required_props: Map.get(schema, "required", []),
+      optional_props: []
+    }
+  end
+
   # Handling for when the component isn't a full component by it's own, but instead embeds other components
-  def parse_component_schema(%{"oneOf" => _oneOf} = args) do
+  def parse_component_schema(%{"oneOf" => oneOf} = args) do
+    components =
+      oneOf
+      |> Enum.map(fn item -> parse_type(item) end)
+      |> Enum.map(fn
+        {:component, ref} -> {:component, ref}
+        other -> other
+      end)
+
+    %{
+      kind: :oneOf,
+      # piggybacking parse_property which handles parsing of "oneOf" already
+      components: components,
+      description: Map.get(args, "description", ""),
+      required_props: [],
+      optional_props: []
+    }
+  end
+
+  def parse_component_schema(%{"anyOf" => _allOf} = args) do
     %{
       kind: :oneOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
@@ -433,13 +532,35 @@ defmodule ExOpenAI.Codegen do
     }
   end
 
-  def parse_component_schema(%{"allOf" => _allOf} = args) do
+  def parse_component_schema(%{"$ref" => ref}) do
+    {:component, String.replace(ref, "#/components/schemas/", "")}
+  end
+
+  def parse_component_schema(%{"allOf" => allOfList} = _args) do
+    #
+    # First pass - resolve all of the sub-components
+    resolved_all_of_list =
+      allOfList
+      |> Enum.map(&parse_component_schema(&1))
+
+    # todo: get all the required props of all nested items
+    nested_required_fields =
+      allOfList
+      |> Enum.map(fn x ->
+        case x do
+          %{"required" => required} -> required
+          _ -> []
+        end
+      end)
+      |> List.flatten()
+
     %{
       kind: :allOf,
       # piggybacking parse_property which handles parsing of "oneOf" already
-      components: parse_property(args) |> Map.get(:type) |> elem(1),
-      required_props: [],
-      optional_props: []
+      components: resolved_all_of_list,
+      required_prop_keys: nested_required_fields,
+      optional_props: [],
+      required_props: []
     }
   end
 
@@ -453,6 +574,11 @@ defmodule ExOpenAI.Codegen do
   @spec parse_get_schema(map()) :: %{type: String.t(), example: String.t()}
   defp parse_get_schema(%{"type" => type, "example" => example}) do
     %{type: type, example: example}
+  end
+
+  defp parse_get_schema(%{"$ref" => ref} = _args) do
+    %{type: {:component, String.replace(ref, "#/components/schemas/", "")}}
+    # %{type: "string"}
   end
 
   defp parse_get_schema(%{"type" => _type} = args),
@@ -501,31 +627,80 @@ defmodule ExOpenAI.Codegen do
     )
   end
 
+  @type response_schema :: %{String.t() => any()}
+  @type one_of_type :: {:oneOf, list({:component, String.t()})}
+  @type response_type :: atom() | component_ref | one_of_type | nil
+
+  @spec extract_response_type(%{required(String.t()) => map()}) :: response_type
   defp extract_response_type(%{"200" => %{"content" => content}}) do
-    content
-    # [["application/json", %{}]]
-    |> Map.to_list()
-    # ["application/json", %{}]
-    |> List.first()
-    # %{}
-    |> Kernel.elem(1)
-    |> Map.get("schema")
-    |> case do
-      # no ref
-      %{"type" => type} ->
-        String.to_atom(type)
+    return_types =
+      content
+      # [["application/json", %{}]]
+      |> Map.to_list()
 
-      %{"$ref" => ref} ->
-        {:component, String.replace(ref, "#/components/schemas/", "")}
+      # iterate over all the items, which can be multiple
+      # application/json:
+      # 	schema:
+      # 		$ref: "#/components/schemas/Response"
+      # text/event-stream:
+      # 	schema:
+      # 		$ref: "#/components/schemas/ResponseStreamEvent"
+      |> Enum.map(fn {_content_type, %{} = content} ->
+        # IO.inspect(content, label: "Content")
+        # IO.inspect(content_type, label: "Content type")
+        content
+        |> Map.get("schema")
+        |> case do
+          %{"$ref" => ref} ->
+            {:component, String.replace(ref, "#/components/schemas/", "")}
 
-      %{"oneOf" => list} ->
-        {:oneOf,
-         Enum.map(list, fn %{"$ref" => ref} ->
-           {:component, String.replace(ref, "#/components/schemas/", "")}
-         end)}
+          %{"type" => type} ->
+            String.to_atom(type)
+
+          %{"oneOf" => list} ->
+            {:oneOf,
+             Enum.map(list, fn %{"$ref" => ref} ->
+               {:component, String.replace(ref, "#/components/schemas/", "")}
+             end)}
+        end
+      end)
+
+    # if return_types is more than one, we'll squash them together into a oneOf type
+    # otherwise just return the first one
+    case return_types do
+      [first] ->
+        first
+
+      _ ->
+        {:oneOf, return_types}
     end
   end
 
+  # Case for empty response, aka nothing to return
+  @spec extract_response_type(%{required(String.t()) => map()}) :: nil
+  defp extract_response_type(%{"200" => _res200} = _res) do
+    nil
+  end
+
+  def filter_arguments_by_location(arguments, location) do
+    arguments
+    |> Enum.filter(fn arg -> arg.in == location end)
+  end
+
+  @spec parse_path(any(), any(), any()) ::
+          nil
+          | %{
+              :arguments => list(),
+              :deprecated? => boolean(),
+              :endpoint => binary(),
+              :group => binary(),
+              :method => :delete | :get | :post,
+              :name => binary(),
+              :response_type => response_type,
+              :summary => any(),
+              optional(:request_body) =>
+                nil | %{content_type: atom(), request_schema: any(), required?: any()}
+            }
   @doc """
   Parses a given "path". A path is what is mapped under the "paths" key of the OpenAI openapi docs, and represents an API endpoint (GET, POST, DELETE, PUT)
 
@@ -642,12 +817,21 @@ defmodule ExOpenAI.Codegen do
         },
         _component_mapping
       ) do
+    # Get all parameters
+    # all_parameters = Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1))
+
+    # # Extract path parameters and query parameters separately
+    # path_parameters = filter_arguments_by_location(all_parameters, "path")
+    # query_parameters = filter_arguments_by_location(all_parameters, "query")
+
     %{
       endpoint: path,
       name: Macro.underscore(id),
       summary: summary,
       deprecated?: Map.has_key?(args, "deprecated"),
       arguments: Map.get(args, "parameters", []) |> Enum.map(&parse_get_arguments(&1)),
+      # path_parameters: path_parameters,
+      # query_parameters: query_parameters,
       method: :get,
       group: extract_group_from_url(path),
       response_type: extract_response_type(responses)
@@ -659,6 +843,7 @@ defmodule ExOpenAI.Codegen do
     nil
   end
 
+  @spec get_documentation() :: %{components: any(), functions: list()}
   def get_documentation do
     {:ok, yml} =
       File.read!("#{__DIR__}/docs/docs.yaml")
@@ -669,6 +854,12 @@ defmodule ExOpenAI.Codegen do
       |> Enum.reduce(%{}, fn {name, value}, acc ->
         Map.put(acc, name, parse_component_schema(value))
       end)
+
+    component_mapping =
+      Enum.map(component_mapping, fn comp ->
+        finalize_schema(comp, component_mapping)
+      end)
+      |> Enum.reduce(%{}, fn {key, val}, acc -> Map.put(acc, key, val) end)
 
     # iterate through all URL pathes and generate a normalized map
     # eg path = /assistants/{xxx}
@@ -706,6 +897,16 @@ defmodule ExOpenAI.Codegen do
   def type_to_spec("allOf"), do: quote(do: any())
   def type_to_spec("anyOf"), do: quote(do: any())
 
+  def type_to_spec({:oneOf, {:enum, keys}}) do
+    keys
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
+  def type_to_spec({:anyOf, {:enum, keys}}) do
+    keys
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
   def type_to_spec({:anyOf, nested}) do
     nested
     |> Enum.map(&type_to_spec/1)
@@ -742,12 +943,21 @@ defmodule ExOpenAI.Codegen do
     {:%{}, [], parsed}
   end
 
+  def type_to_spec({:allOf, nested}) when is_list(nested) do
+    nested
+    |> Enum.map(&type_to_spec/1)
+    # handle as union type
+    |> Enum.reduce(&{:|, [], [&1, &2]})
+  end
+
   # nested component reference
   def type_to_spec({:component, component}) when is_binary(component) do
     # remote types to modules are represented with [:OpenAI, :Component, :X]
     mod = string_to_component(component) |> Module.split() |> Enum.map(&String.to_atom/1)
     {{:., [], [{:__aliases__, [alias: false], mod}, :t]}, [], []}
   end
+
+  def type_to_spec(i) when is_nil(i), do: nil
 
   # fallbacks
   def type_to_spec(i) when is_atom(i), do: type_to_spec(Atom.to_string(i))
@@ -767,9 +977,9 @@ defmodule ExOpenAI.Codegen do
             String.to_existing_atom(key)
           rescue
             ArgumentError ->
-              IO.puts(
-                "Warning! Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
-              )
+              # Logger.debug(
+              #   "Found non-existing atom returning by OpenAI API: :#{key}.\nThis may mean that OpenAI has updated it's API, or that the key was not included in their official openapi reference.\nGoing to load this atom now anyway, but as converting a lot of unknown data into atoms can result in a memory leak, watch out for these messages. If you see a lot of them, something may be wrong."
+              # )
 
               String.to_atom(key)
           end,
@@ -785,5 +995,220 @@ defmodule ExOpenAI.Codegen do
     s
     |> String.replace("/docs/", "https://platform.openai.com/docs/")
     |> String.replace("/tokenizer", "https://platform.openai.com/tokenizer")
+  end
+
+  @doc """
+  finalize_schema takes the given component schema and mapping of all components, then "burns" a final schema with all embedded schemas resolved
+  For example, if a schema has a :allOf type (meaning it requires ALL properties of all embedded schemas), finalize_schema
+  will recursively traverse the component tree until we're left with a "simple" schema without embedded items
+
+  So, a :allOf of [{:component, 1}, {:component, 2}] will turn into %{ ... all keys of comp1, ... all keys of comp2}
+  """
+  @type all_components :: %{String.t() => map()}
+
+  @spec finalize_schema({:component, String.t()}, all_components) :: all_components()
+  def finalize_schema({:component, target_component_name}, all_components) do
+    finalized_sub_schema =
+      Map.get(all_components, target_component_name)
+
+    finalize_schema(finalized_sub_schema, all_components)
+  end
+
+  def finalize_schema(%{kind: :component} = schema, _all_comps) do
+    schema
+  end
+
+  def finalize_schema({:oneOf, components}, all_components) do
+    finalized_components =
+      Enum.map(components, fn component ->
+        case component do
+          {:component, ref} -> finalize_schema({:component, ref}, all_components)
+          other -> finalize_schema(other, all_components)
+        end
+      end)
+
+    {:oneOf, finalized_components}
+  end
+
+  def finalize_schema(
+        %{kind: :allOf, components: component_list, required_prop_keys: _required_prop_keys},
+        all_components
+      ) do
+    # step 1: Resolve the schema of all nested components
+    _finalized_schema =
+      component_list
+      |> Enum.map(fn schema ->
+        finalize_schema(schema, all_components)
+      end)
+      |> Enum.reduce(fn schema1, schema2 ->
+        Map.merge(schema1, schema2)
+      end)
+  end
+
+  @dialyzer {:nowarn_function, finalize_schema: 2}
+  def finalize_schema(
+        {name,
+         %{kind: :allOf, components: component_list, required_prop_keys: required_prop_keys}},
+        all_components
+      ) do
+    # step 1: Resolve the schema of all nested components
+    finalized_schema =
+      component_list
+      |> Enum.map(fn schema ->
+        finalize_schema(schema, all_components)
+      end)
+      |> Enum.reduce(fn schema1, schema2 ->
+        # merge all required_props and optional_props together
+        # traverse all optional_props
+        # step 1: Resolve the schema of all nested components
+        # merge all required_props and optional_props together
+        required_props = schema1.required_props ++ schema2.required_props
+        optional_props = schema1.optional_props ++ schema2.optional_props
+
+        # filter the required_props based on the required_prop_keys
+        required_props =
+          Enum.filter(required_props ++ optional_props, fn prop ->
+            prop.name in required_prop_keys
+          end)
+
+        optional_props =
+          Enum.filter(optional_props, fn prop ->
+            prop.name not in required_prop_keys
+          end)
+
+        Map.merge(schema1, %{required_props: required_props, optional_props: optional_props})
+      end)
+
+    {name, finalized_schema}
+  end
+
+  # Add this clause to handle nil values
+  def finalize_schema(nil, _all_components), do: nil
+
+  def finalize_schema({_name, _schema} = comp, _all_components) do
+    comp
+  end
+
+  @doc """
+  Helper function to convert the response from the API into the type that the function is expected to return.
+
+  Takes the response and the expected response type, and converts the response into the expected type if they match.
+  If no keys match, the response is returned as is (as a map instead of a struct).
+
+  ## Behavior Details
+
+  * Handles responses with different patterns, including those with "response" and "type" keys
+  * Processes reference types directly (when `is_reference(ref)` is true)
+  * Converts responses to component structs when the response structure matches a component
+  * Handles `oneOf` type responses by finding the best matching component based on key matching
+  * Uses a key-matching algorithm to determine the most appropriate struct to convert to
+  * For components, counts how many keys in the response match the component's struct keys
+  * For `oneOf` types, tries each possible component and selects the one with the most matching keys
+  * Returns the original response when no conversion is needed or possible
+  * Preserves error tuples, passing them through unchanged
+
+  ## Return Values
+
+  * `{:ok, converted_value}` for successful conversions
+  * Original error tuples are passed through unchanged
+  """
+  def convert_response({:ok, %{"response" => res, "type" => _t}}, response_type) do
+    convert_response({:ok, res}, response_type)
+  end
+
+  @spec convert_response({:ok, any()} | {:error, any()}, response_type) ::
+          {:ok, any()} | {:error, any()}
+  def convert_response(response, response_type) do
+    case response do
+      {:ok, ref} when is_reference(ref) ->
+        {:ok, ref}
+
+      {:ok, res} ->
+        case response_type do
+          {:component, comp} ->
+            # calling unpack_ast here so that all atoms of the given struct are
+            # getting allocated. otherwise later usage of keys_to_atom will fail
+            ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+            keys =
+              ExOpenAI.Codegen.string_to_component(comp).__struct__()
+              |> Map.keys()
+
+            # get the number of matching keys
+            matching_keys =
+              res
+              |> keys_to_atoms()
+              |> Map.keys()
+              |> Enum.filter(fn key -> key in keys end)
+              |> length()
+
+            case matching_keys do
+              0 ->
+                {:ok, res}
+
+              _ ->
+                # todo: this is not recursive yet, so nested values won't be correctly identified as struct
+                # although the typespec is already recursive, so there can be cases where
+                # the typespec says a struct is nested, but there isn't
+                {:ok,
+                 struct(
+                   ExOpenAI.Codegen.string_to_component(comp),
+                   ExOpenAI.Codegen.keys_to_atoms(res)
+                 )}
+            end
+
+          # handling for oneOf, aka a list of potential types that the response can have
+          # since we don't know exactly which it is, we can try to convert it to the first one
+          {:oneOf, comps} when is_list(comps) ->
+            # get number of matching keys for each comp
+            # this is a bit of a hack, but it works
+            matching_struct =
+              Enum.map(comps, fn
+                {:component, comp} ->
+                  # get the keys of the component
+                  keys =
+                    ExOpenAI.Codegen.string_to_component(comp).__struct__()
+                    |> Map.keys()
+
+                  # get the number of matching keys
+                  matching_keys =
+                    res
+                    |> keys_to_atoms()
+                    |> Map.keys()
+                    |> Enum.filter(fn key -> key in keys end)
+                    |> length()
+
+                  {comp, matching_keys}
+
+                _ ->
+                  nil
+              end)
+              # sort by the number of matching keys
+              |> Enum.sort_by(fn {_comp, matching_keys} -> matching_keys end, :desc)
+              # filter all with 0
+              |> Enum.filter(fn {_comp, matching_keys} -> matching_keys > 0 end)
+              |> List.first()
+
+            case matching_struct do
+              nil ->
+                {:ok, res}
+
+              {comp, _keys} ->
+                ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+                {:ok,
+                 struct(
+                   ExOpenAI.Codegen.string_to_component(comp),
+                   ExOpenAI.Codegen.keys_to_atoms(res)
+                 )}
+            end
+
+          _ ->
+            {:ok, res}
+        end
+
+      e ->
+        e
+    end
   end
 end

@@ -11,30 +11,48 @@ This SDK is fully auto-generated using [metaprogramming](https://elixirschool.co
 **Note:** Due to the nature of auto-generating something, you may encounter stuff that isn't working yet. Make sure to report if you notice anything acting up.
 
 - [Elixir SDK for OpenAI APIs](#elixir-sdk-for-openai-apis)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
-    - [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
-      - [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
-      - [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
-      - [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
-  - [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
-  - [Configuration](#configuration)
-  - [Usage](#usage)
-    - [Using ChatGPT APIs](#using-chatgpt-apis)
-    - [Using Assistant APIs](#using-assistant-apis)
-    - [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
-      - [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
-    - [Usage of Audio related](#usage-of-audio-related)
-    - [Streaming data](#streaming-data)
-      - [Streaming with a callback function](#streaming-with-a-callback-function)
-      - [Streaming with a separate process](#streaming-with-a-separate-process)
-      - [Caveats](#caveats)
-  - [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
-  - [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
-  - [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
-  - [License](#license)
-  - [Attribution](#attribution)
+	- [Features](#features)
+	- [Installation](#installation)
+	- [Supported endpoints (basically everything)](#supported-endpoints-basically-everything)
+		- [Assistants](#assistants)
+		- [Audio](#audio)
+		- [Batches](#batches)
+		- [Chat Completions](#chat-completions)
+		- [Completions](#completions)
+		- [Embeddings](#embeddings)
+		- [Files](#files)
+		- [Fine-tuning](#fine-tuning)
+		- [Images](#images)
+		- [Models](#models)
+		- [Moderations](#moderations)
+		- [Organization](#organization)
+		- [Realtime](#realtime)
+		- [Responses](#responses)
+			- [Using the Responses API](#using-the-responses-api)
+		- [Threads](#threads)
+		- [Uploads](#uploads)
+		- [Vector Stores](#vector-stores)
+		- [Editor features: Autocomplete, specs, docs](#editor-features-autocomplete-specs-docs)
+			- [Autocompletion/type-hinting through LSP / ElixirSense](#autocompletiontype-hinting-through-lsp--elixirsense)
+			- [Typechecking and diagnostics through strict @spec definitions](#typechecking-and-diagnostics-through-strict-spec-definitions)
+			- [Inline docs and signatures thanks to @spec and @doc](#inline-docs-and-signatures-thanks-to-spec-and-doc)
+	- [To Do's / What's not working yet](#to-dos--whats-not-working-yet)
+	- [Configuration](#configuration)
+	- [Usage](#usage)
+		- [Using ChatGPT APIs](#using-chatgpt-apis)
+		- [Using Assistant APIs](#using-assistant-apis)
+		- [Usage of endpoints that require files to upload](#usage-of-endpoints-that-require-files-to-upload)
+			- [File endpoints that require filename information (Audio transcription)](#file-endpoints-that-require-filename-information-audio-transcription)
+		- [Usage of Audio related](#usage-of-audio-related)
+		- [Streaming data](#streaming-data)
+			- [Streaming with a callback function](#streaming-with-a-callback-function)
+			- [Streaming with a separate process](#streaming-with-a-separate-process)
+			- [Caveats](#caveats)
+	- [How to update once OpenAI changes something?](#how-to-update-once-openai-changes-something)
+	- [Some stuff built using this SDK (add yours with a PR!)](#some-stuff-built-using-this-sdk-add-yours-with-a-pr)
+	- [How auto-generation works / how can I extend this?](#how-auto-generation-works--how-can-i-extend-this)
+	- [License](#license)
+	- [Attribution](#attribution)
 
 ## Features
 
@@ -60,47 +78,198 @@ end
 
 ## Supported endpoints (basically everything)
 
-- "/assistants/{assistant_id}"
-- "/assistants/{assistant_id}/files/{file_id}"
-- "/assistants"
-- "/assistants/{assistant_id}/files"
-- "/audio/speech"
-- "/audio/transcriptions"
-- "/audio/translations"
-- "/chat/completions"
-- "/completions"
-- "/edits"
-- "/embeddings"
-- "/files/{file_id}"
-- "/files/{file_id}/content"
-- "/files"
-- "/fine-tunes/{fine_tune_id}"
-- "/fine-tunes/{fine_tune_id}/events"
-- "/fine-tunes/{fine_tune_id}/cancel"
-- "/fine-tunes"
-- "/fine_tuning/jobs"
-- "/fine_tuning/jobs/{fine_tuning_job_id}"
-- "/fine_tuning/jobs/{fine_tuning_job_id}/events"
-- "/fine_tuning/jobs/{fine_tuning_job_id}/cancel"
-- "/images/edits"
-- "/images/generations"
-- "/images/variations"
-- "/models/{model}"
-- "/models"
-- "/moderations"
-- "/threads/{thread_id}/messages/{message_id}/files"
-- "/threads/{thread_id}"
-- "/threads"
-- "/threads/{thread_id}/runs/{run_id}/steps"
-- "/threads/{thread_id}/messages/{message_id}/files/{file_id}"
-- "/threads/{thread_id}/runs/{run_id}/submit_tool_outputs"
-- "/threads/{thread_id}/runs/{run_id}/steps/{step_id}"
-- "/threads/{thread_id}/messages"
-- "/threads/runs"
-- "/threads/{thread_id}/messages/{message_id}"
-- "/threads/{thread_id}/runs/{run_id}/cancel"
-- "/threads/{thread_id}/runs"
-- "/threads/{thread_id}/runs/{run_id}"
+### Assistants
+- modify_assistant: `/assistants/{assistant_id}`
+- get_assistant: `/assistants/{assistant_id}`
+- delete_assistant: `/assistants/{assistant_id}`
+- create_assistant: `/assistants`
+- list_assistants: `/assistants`
+
+### Audio
+- create_speech: `/audio/speech`
+- create_transcription: `/audio/transcriptions`
+- create_translation: `/audio/translations`
+
+### Batches
+- retrieve_batch: `/batches/{batch_id}`
+- create_batch: `/batches`
+- list_batches: `/batches`
+- cancel_batch: `/batches/{batch_id}/cancel`
+
+### Chat Completions
+- get_chat_completion_messages: `/chat/completions/{completion_id}/messages`
+- create_chat_completion: `/chat/completions`
+- list_chat_completions: `/chat/completions`
+- update_chat_completion: `/chat/completions/{completion_id}`
+- get_chat_completion: `/chat/completions/{completion_id}`
+- delete_chat_completion: `/chat/completions/{completion_id}`
+
+### Completions
+- create_completion: `/completions`
+
+### Embeddings
+- create_embedding: `/embeddings`
+
+### Files
+- retrieve_file: `/files/{file_id}`
+- delete_file: `/files/{file_id}`
+- download_file: `/files/{file_id}/content`
+- create_file: `/files`
+- list_files: `/files`
+
+### Fine-tuning
+- create_fine_tuning_job: `/fine_tuning/jobs`
+- list_paginated_fine_tuning_jobs: `/fine_tuning/jobs`
+- retrieve_fine_tuning_job: `/fine_tuning/jobs/{fine_tuning_job_id}`
+- list_fine_tuning_events: `/fine_tuning/jobs/{fine_tuning_job_id}/events`
+- list_fine_tuning_job_checkpoints: `/fine_tuning/jobs/{fine_tuning_job_id}/checkpoints`
+- cancel_fine_tuning_job: `/fine_tuning/jobs/{fine_tuning_job_id}/cancel`
+
+### Images
+- create_image_edit: `/images/edits`
+- create_image: `/images/generations`
+- create_image_variation: `/images/variations`
+
+### Models
+- retrieve_model: `/models/{model}`
+- delete_model: `/models/{model}`
+- list_models: `/models`
+
+### Moderations
+- create_moderation: `/moderations`
+
+### Organization
+- usage-audio-speeches: `/organization/usage/audio_speeches`
+- usage-moderations: `/organization/usage/moderations`
+- usage-costs: `/organization/costs`
+- usage-vector-stores: `/organization/usage/vector_stores`
+- usage-images: `/organization/usage/images`
+- admin-api-keys-get: `/organization/admin_api_keys/{key_id}`
+- admin-api-keys-delete: `/organization/admin_api_keys/{key_id}`
+- modify-project: `/organization/projects/{project_id}`
+- retrieve-project: `/organization/projects/{project_id}`
+- admin-api-keys-create: `/organization/admin_api_keys`
+- admin-api-keys-list: `/organization/admin_api_keys`
+- list-project-rate-limits: `/organization/projects/{project_id}/rate_limits`
+- create-project: `/organization/projects`
+- list-projects: `/organization/projects`
+- archive-project: `/organization/projects/{project_id}/archive`
+- create-project-service-account: `/organization/projects/{project_id}/service_accounts`
+- list-project-service-accounts: `/organization/projects/{project_id}/service_accounts`
+- list-audit-logs: `/organization/audit_logs`
+- retrieve-project-service-account: `/organization/projects/{project_id}/service_accounts/{service_account_id}`
+- delete-project-service-account: `/organization/projects/{project_id}/service_accounts/{service_account_id}`
+- retrieve-invite: `/organization/invites/{invite_id}`
+- delete-invite: `/organization/invites/{invite_id}`
+- usage-completions: `/organization/usage/completions`
+- list-project-api-keys: `/organization/projects/{project_id}/api_keys`
+- update-project-rate-limits: `/organization/projects/{project_id}/rate_limits/{rate_limit_id}`
+- invite_user: `/organization/invites`
+- list-invites: `/organization/invites`
+- usage-audio-transcriptions: `/organization/usage/audio_transcriptions`
+- usage-embeddings: `/organization/usage/embeddings`
+- retrieve-project-api-key: `/organization/projects/{project_id}/api_keys/{key_id}`
+- delete-project-api-key: `/organization/projects/{project_id}/api_keys/{key_id}`
+- list-users: `/organization/users`
+- modify-project-user: `/organization/projects/{project_id}/users/{user_id}`
+- retrieve-project-user: `/organization/projects/{project_id}/users/{user_id}`
+- delete-project-user: `/organization/projects/{project_id}/users/{user_id}`
+- create-project-user: `/organization/projects/{project_id}/users`
+- list-project-users: `/organization/projects/{project_id}/users`
+- modify-user: `/organization/users/{user_id}`
+- retrieve-user: `/organization/users/{user_id}`
+- delete-user: `/organization/users/{user_id}`
+- usage-code-interpreter-sessions: `/organization/usage/code_interpreter_sessions`
+
+### Realtime
+- create-realtime-session: `/realtime/sessions`
+
+### Responses
+- list_input_items: `/responses/{response_id}/input_items`
+- get_response: `/responses/{response_id}`
+- delete_response: `/responses/{response_id}`
+- create_response: `/responses`
+
+#### Using the Responses API
+
+The Responses API is OpenAI's newest offering that provides a stateful conversation interface with simpler implementation than the Assistants API. It maintains conversation context between requests and allows for easy follow-up interactions.
+
+```elixir
+# Create an initial response
+{:ok, response} = ExOpenAI.Responses.create_response("tell me a joke", "gpt-4o-mini")
+
+# The response contains the model's reply
+IO.puts("Response ID: #{response.id}")
+IO.puts("Model used: #{response.model}")
+IO.puts("Status: #{response.status}")
+
+# Get the assistant's message
+output = List.first(response.output)
+IO.puts("Assistant's response: #{output.content |> List.first() |> Map.get(:text)}")
+
+# Continue the conversation by referencing the previous response
+{:ok, follow_up} = ExOpenAI.Responses.create_response(
+  "Please tell me what I asked you to do in my previous message",
+  "gpt-4o-mini",
+  previous_response_id: response.id
+)
+
+# The model will remember the context from the previous exchange
+follow_up_content = follow_up.output
+  |> List.first()
+  |> Map.get(:content)
+  |> List.first()
+  |> Map.get(:text)
+
+IO.puts("Follow-up response: #{follow_up_content}")
+# Output: "You asked me to tell you a joke. Would you like to hear another one?"
+```
+
+The Responses API maintains conversation history automatically when you provide the `previous_response_id` parameter, making it ideal for building conversational applications with minimal state management on your end.
+
+### Threads
+- modify_thread: `/threads/{thread_id}`
+- get_thread: `/threads/{thread_id}`
+- delete_thread: `/threads/{thread_id}`
+- create_thread: `/threads`
+- list_run_steps: `/threads/{thread_id}/runs/{run_id}/steps`
+- submit_tool_ouputs_to_run: `/threads/{thread_id}/runs/{run_id}/submit_tool_outputs`
+- get_run_step: `/threads/{thread_id}/runs/{run_id}/steps/{step_id}`
+- create_message: `/threads/{thread_id}/messages`
+- list_messages: `/threads/{thread_id}/messages`
+- create_thread_and_run: `/threads/runs`
+- modify_message: `/threads/{thread_id}/messages/{message_id}`
+- get_message: `/threads/{thread_id}/messages/{message_id}`
+- delete_message: `/threads/{thread_id}/messages/{message_id}`
+- cancel_run: `/threads/{thread_id}/runs/{run_id}/cancel`
+- create_run: `/threads/{thread_id}/runs`
+- list_runs: `/threads/{thread_id}/runs`
+- modify_run: `/threads/{thread_id}/runs/{run_id}`
+- get_run: `/threads/{thread_id}/runs/{run_id}`
+
+### Uploads
+- cancel_upload: `/uploads/{upload_id}/cancel`
+- create_upload: `/uploads`
+- add_upload_part: `/uploads/{upload_id}/parts`
+- complete_upload: `/uploads/{upload_id}/complete`
+
+### Vector Stores
+- update_vector_store_file_attributes: `/vector_stores/{vector_store_id}/files/{file_id}`
+- get_vector_store_file: `/vector_stores/{vector_store_id}/files/{file_id}`
+- delete_vector_store_file: `/vector_stores/{vector_store_id}/files/{file_id}`
+- get_vector_store_file_batch: `/vector_stores/{vector_store_id}/file_batches/{batch_id}`
+- create_vector_store: `/vector_stores`
+- list_vector_stores: `/vector_stores`
+- list_files_in_vector_store_batch: `/vector_stores/{vector_store_id}/file_batches/{batch_id}/files`
+- create_vector_store_file: `/vector_stores/{vector_store_id}/files`
+- list_vector_store_files: `/vector_stores/{vector_store_id}/files`
+- retrieve_vector_store_file_content: `/vector_stores/{vector_store_id}/files/{file_id}/content`
+- create_vector_store_file_batch: `/vector_stores/{vector_store_id}/file_batches`
+- modify_vector_store: `/vector_stores/{vector_store_id}`
+- get_vector_store: `/vector_stores/{vector_store_id}`
+- delete_vector_store: `/vector_stores/{vector_store_id}`
+- search_vector_store: `/vector_stores/{vector_store_id}/search`
+- cancel_vector_store_file_batch: `/vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel`
 
 ### Editor features: Autocomplete, specs, docs
 

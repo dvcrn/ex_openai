@@ -5,6 +5,8 @@ if config_env() == :test do
     filter_request_headers: [
       "OpenAI-Organization",
       "Openai-Organization",
-      "Authorization"
+      "openai-organization",
+      "Authorization",
+      "Set-Cookie"
     ]
 end

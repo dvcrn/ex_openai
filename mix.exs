@@ -26,7 +26,7 @@ defmodule ExOpenAI.MixProject do
   def application do
     [
       mod: {ExOpenAI, []},
-      extra_applications: [:httpoison, :jason, :logger, :yaml_elixir]
+      extra_applications: [:hackney, :httpoison, :jason, :logger, :yaml_elixir]
     ]
   end
 
@@ -57,7 +57,7 @@ defmodule ExOpenAI.MixProject do
       {:httpoison, "~> 2.2.1"},
       {:mix_test_watch, "~> 1.2", only: :test},
       {:ex_doc, ">= 0.34.1", only: :dev},
-      {:exvcr, "~> 0.15.1", only: :test},
+      {:exvcr, "~> 0.16.0", only: :test},
       {:exjsx, "~> 4.0", only: :test},
       {:yaml_elixir, "~> 2.11"},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},

@@ -26,3 +26,4 @@ openai-*.tar
 # Temporary files for e.g. tests
 /tmp
 
+.aider*
