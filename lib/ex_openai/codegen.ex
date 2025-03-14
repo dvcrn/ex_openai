@@ -1069,4 +1069,63 @@ defmodule ExOpenAI.Codegen do
   def finalize_schema({_name, _schema} = comp, _all_components) do
     comp
   end
+
+  @spec convert_response({:ok, any()} | {:error, any()}, response_type) ::
+          {:ok, any()} | {:error, any()}
+  @doc "Helper function to convert the response from the API into the type that the function is expected to return"
+  def convert_response(response, response_type) do
+    case response do
+      {:ok, ref} when is_reference(ref) ->
+        {:ok, ref}
+
+      {:ok, res} ->
+        case response_type do
+          {:component, comp} ->
+            # calling unpack_ast here so that all atoms of the given struct are
+            # getting allocated. otherwise later usage of keys_to_atom will fail
+            ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+            # todo: this is not recursive yet, so nested values won't be correctly identified as struct
+            # although the typespec is already recursive, so there can be cases where
+            # the typespec says a struct is nested, but there isn't
+            {:ok,
+             struct(
+               ExOpenAI.Codegen.string_to_component(comp),
+               ExOpenAI.Codegen.keys_to_atoms(res)
+             )}
+
+          # handling for oneOf, aka a list of potential types that the response can have
+          # since we don't know exactly which it is, we can try to convert it to the first one
+          {:oneOf, comps} when is_list(comps) ->
+            # find if we have a component in the list
+            found_comp =
+              comps
+              |> Enum.find(fn
+                {:component, _} -> true
+                _ -> false
+              end)
+
+            case found_comp do
+              nil ->
+                {:ok, res}
+
+              found_comp ->
+                {:component, comp} = found_comp
+                ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
+
+                {:ok,
+                 struct(
+                   ExOpenAI.Codegen.string_to_component(comp),
+                   ExOpenAI.Codegen.keys_to_atoms(res)
+                 )}
+            end
+
+          _ ->
+            {:ok, res}
+        end
+
+      e ->
+        e
+    end
+  end
 end

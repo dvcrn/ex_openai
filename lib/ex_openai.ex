@@ -167,66 +167,6 @@ end)
     API Reference: https://platform.openai.com/docs/api-reference/#{name}
     """
 
-    """
-    Helper function to convert the response from the API into the type that the function is expected to return
-    """
-
-    defp convert_response(response, response_type) do
-      case response do
-        {:ok, ref} when is_reference(ref) ->
-          {:ok, ref}
-
-        {:ok, res} ->
-          case response_type do
-            {:component, comp} ->
-              # calling unpack_ast here so that all atoms of the given struct are
-              # getting allocated. otherwise later usage of keys_to_atom will fail
-              ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
-
-              # todo: this is not recursive yet, so nested values won't be correctly identified as struct
-              # although the typespec is already recursive, so there can be cases where
-              # the typespec says a struct is nested, but there isn't
-              {:ok,
-               struct(
-                 ExOpenAI.Codegen.string_to_component(comp),
-                 ExOpenAI.Codegen.keys_to_atoms(res)
-               )}
-
-            # handling for oneOf, aka a list of potential types that the response can have
-            # since we don't know exactly which it is, we can try to convert it to the first one
-            {:oneOf, comps} when is_list(comps) ->
-              # find if we have a component in the list
-              found_comp =
-                comps
-                |> Enum.find(fn
-                  {:component, _} -> true
-                  _ -> false
-                end)
-
-              case found_comp do
-                nil ->
-                  {:ok, res}
-
-                found_comp ->
-                  {:component, comp} = found_comp
-                  ExOpenAI.Codegen.string_to_component(comp).unpack_ast()
-
-                  {:ok,
-                   struct(
-                     ExOpenAI.Codegen.string_to_component(comp),
-                     ExOpenAI.Codegen.keys_to_atoms(res)
-                   )}
-              end
-
-            _ ->
-              {:ok, res}
-          end
-
-        e ->
-          e
-      end
-    end
-
     functions
     |> Enum.each(fn fx ->
       %{
@@ -241,7 +181,6 @@ end)
       } = fx
 
       name = String.to_atom(function_name)
-      IO.inspect(response_type)
 
       content_type =
         with body when not is_nil(body) <- Map.get(fx, :request_body, %{}),
@@ -458,7 +397,7 @@ end)
         # function to convert the response back into a struct
         # passed into the client to get applied onto the response
         convert_response = fn response ->
-          convert_response(response, unquote(response_type))
+          ExOpenAI.Codegen.convert_response(response, unquote(response_type))
         end
 
         ExOpenAI.Config.http_client().api_call(
