@@ -1169,7 +1169,6 @@ defmodule ExOpenAI.Codegen do
                   keys =
                     ExOpenAI.Codegen.string_to_component(comp).__struct__()
                     |> Map.keys()
-                    |> IO.inspect()
 
                   # get the number of matching keys
                   matching_keys =

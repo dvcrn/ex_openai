@@ -121,60 +121,78 @@ defmodule ExOpenAI.StreamingClient do
     # Combine the existing buffer with the new chunk
     new_buffer = state.buffer <> chunk
 
-    # Process SSE format properly
-    # First split by double newlines which separate SSE messages
-    sse_messages = String.split(new_buffer, "\n\n")
+    # Check if the buffer contains a complete JSON object (for error cases)
+    case is_complete_json(new_buffer) do
+      {:ok, json_obj} ->
+        # We have a complete JSON object, process it directly
+        process_complete_json(json_obj, state)
+        # Clear the buffer since we've processed the JSON
+        {:noreply, %{state | buffer: ""}}
 
-    # The last element might be incomplete, so we'll keep it as buffer
-    {messages, incomplete_buffer} =
-      case sse_messages do
-        [] ->
-          {[], ""}
+      :incomplete ->
+        # Process SSE format properly
+        # First split by double newlines which separate SSE messages
+        sse_messages = String.split(new_buffer, "\n\n")
 
-        messages ->
-          last_idx = length(messages) - 1
-          {Enum.take(messages, last_idx), Enum.at(messages, last_idx, "")}
-      end
+        # Check if the buffer ends with "\n\n" to determine if the last message is complete
+        buffer_complete = String.ends_with?(new_buffer, "\n\n")
 
-    # Process each complete SSE message
-    state_after_parse =
-      Enum.reduce(messages, state, fn message, st ->
-        if String.trim(message) == "" do
-          st
-        else
-          # Parse the SSE message
-          message_parts = String.split(message, "\n")
+        # If the buffer ends with "\n\n", all messages are complete
+        {messages, incomplete_buffer} =
+          case {sse_messages, buffer_complete} do
+            {[], _} ->
+              {[], ""}
 
-          # Extract event type and data
-          {event_type, data} = extract_sse_parts(message_parts)
+            {messages, true} ->
+              # All messages are complete, including the last one
+              {messages, ""}
 
-          case event_type do
-            "response.created" ->
-              process_sse_data(data, st)
-
-            "response.in_progress" ->
-              process_sse_data(data, st)
-
-            "response.final" ->
-              process_sse_data(data, st)
-
-            "response.completed" ->
-              process_sse_data(data, st)
-
-            "[DONE]" ->
-              forward_response(st.stream_to, :finish)
-              st
-
-            _ ->
-              # Unknown event type, try to process data anyway
-              process_sse_data(data, st)
+            {messages, false} ->
+              # The last message might be incomplete
+              last_idx = length(messages) - 1
+              {Enum.take(messages, last_idx), Enum.at(messages, last_idx, "")}
           end
-        end
-      end)
 
-    # Update the buffer in the new state
-    new_state = %{state_after_parse | buffer: incomplete_buffer}
-    {:noreply, new_state}
+        # Process each complete SSE message
+        state_after_parse =
+          Enum.reduce(messages, state, fn message, st ->
+            if String.trim(message) == "" do
+              st
+            else
+              # Parse the SSE message
+              message_parts = String.split(message, "\n")
+
+              # Extract event type and data
+              {event_type, data} = extract_sse_parts(message_parts)
+
+              case event_type do
+                "response.created" ->
+                  process_sse_data(data, st)
+
+                "response.in_progress" ->
+                  process_sse_data(data, st)
+
+                "response.final" ->
+                  process_sse_data(data, st)
+
+                "response.completed" ->
+                  process_sse_data(data, st)
+
+                "[DONE]" ->
+                  forward_response(st.stream_to, :finish)
+                  st
+
+                _ ->
+                  # Unknown event type, try to process data anyway
+                  process_sse_data(data, st)
+              end
+            end
+          end)
+
+        # Update the buffer in the new state
+        new_state = %{state_after_parse | buffer: incomplete_buffer}
+        {:noreply, new_state}
+    end
   end
 
   def handle_info(%HTTPoison.Error{reason: reason}, state) do
@@ -240,22 +258,66 @@ defmodule ExOpenAI.StreamingClient do
       _ ->
         case Jason.decode(data) do
           {:ok, decoded} ->
-            case state.convert_response_fx.({:ok, decoded}) do
-              {:ok, message} ->
-                forward_response(state.stream_to, {:data, message})
+            # Check if the decoded JSON contains an error
+            if Map.has_key?(decoded, "error") do
+              Logger.warning("Received error in stream: #{inspect(decoded.error)}")
+              forward_response(state.stream_to, {:error, decoded.error})
+              state
+            else
+              case state.convert_response_fx.({:ok, decoded}) do
+                {:ok, message} ->
+                  forward_response(state.stream_to, {:data, message})
 
-              e ->
-                Logger.warning(
-                  "Something went wrong trying to decode the response: #{inspect(e)}"
-                )
+                e ->
+                  Logger.warning(
+                    "Something went wrong trying to decode the response: #{inspect(e)}"
+                  )
+              end
+
+              state
             end
-
-            state
 
           {:error, _} ->
             Logger.warning("Received something that isn't valid JSON in stream: #{inspect(data)}")
             state
         end
     end
+  end
+
+  # Helper function to check if a string contains a complete JSON object
+  defp is_complete_json(str) do
+    # Try to parse the string as JSON
+    case Jason.decode(str) do
+      {:ok, decoded} ->
+        # If it's a complete JSON with an error field, return it
+        if is_map(decoded) && Map.has_key?(decoded, "error") do
+          {:ok, decoded}
+        else
+          :incomplete
+        end
+
+      {:error, _} ->
+        :incomplete
+    end
+  end
+
+  # Process a complete JSON object (typically an error)
+  defp process_complete_json(json_obj, state) do
+    if Map.has_key?(json_obj, "error") do
+      error_data = Map.get(json_obj, "error")
+      Logger.warning("Received error in stream: #{inspect(error_data)}")
+      forward_response(state.stream_to, {:error, error_data})
+    else
+      # Handle other types of complete JSON objects if needed
+      case state.convert_response_fx.({:ok, json_obj}) do
+        {:ok, message} ->
+          forward_response(state.stream_to, {:data, message})
+
+        e ->
+          Logger.warning("Something went wrong trying to decode the response: #{inspect(e)}")
+      end
+    end
+
+    state
   end
 end
