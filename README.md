@@ -13,6 +13,7 @@ ExOpenAI is an (unofficial) Elixir SDK for interacting with the [OpenAI APIs](ht
 - Elixir-style API with required arguments as function parameters and optional arguments as keyword lists
 - Support for streaming responses with SSE
 - Editor features: autocompletion, typechecking, and inline documentation
+- Support with OpenAI-compatible APIs (like OpenRouter)
 
 <img src="images/functiondocs.png" width="500" />
 
@@ -74,6 +75,8 @@ messages = [
   previous_response_id: response.id
 )
 ```
+
+More examples in [Examples](docs/examples.md)
 
 ## API Overview
 
