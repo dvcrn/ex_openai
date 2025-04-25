@@ -61,7 +61,8 @@ defmodule ExOpenAI.MixProject do
       {:exjsx, "~> 4.0", only: :test},
       {:yaml_elixir, "~> 2.11"},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:mime, "~> 2.0"}
     ]
   end
 end

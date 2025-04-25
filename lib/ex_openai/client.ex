@@ -171,21 +171,29 @@ defmodule ExOpenAI.Client do
   end
 
   defp multipart_param({name, {filename, content}}) do
-    with strname <- Atom.to_string(name) do
-      cond do
-        # Strings can be valid bitstreams and bitstreams are valid binaries
-        # Using String.valid? for comparison instead
-        is_bitstring(content) and not String.valid?(content) ->
-          {"file", content, {"form-data", [name: strname, filename: "#{filename}"]}, []}
+    strname = Atom.to_string(name)
+    # Ensure filename is a string
+    strfilename = to_string(filename)
 
-        true ->
-          {strname, content}
-      end
+    cond do
+      # Strings can be valid bitstreams and bitstreams are valid binaries
+      # Using String.valid? for comparison instead
+      is_bitstring(content) and not String.valid?(content) ->
+        # Use MIME library to determine Content-Type
+        mime_type = MIME.from_path(strfilename)
+        # Add Content-Type header
+        {"file", content, {"form-data", [name: strname, filename: strfilename]},
+         [{"Content-Type", mime_type}]}
+
+      # Handle cases where content might not be a binary file needing mime type (e.g., other form fields passed in this format)
+      true ->
+        {strname, {strfilename, content}}
     end
   end
 
   defp multipart_param({name, content}) do
-    multipart_param({name, {name, content}})
+    # This clause handles regular form fields, not file uploads
+    {Atom.to_string(name), content}
   end
 
   def api_multipart_post(url, params \\ [], request_options \\ [], convert_response) do
